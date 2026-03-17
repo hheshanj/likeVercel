@@ -20,6 +20,12 @@ router.get('/:id/processes', async (req: AuthRequest, res: Response): Promise<vo
       orderBy: { createdAt: 'desc' },
     });
 
+    // Get the VPS host for shareable URLs
+    const vps = await prisma.vpsProfile.findUnique({
+      where: { id: vpsId },
+      select: { host: true },
+    });
+
     // Check actual PM2 process status
     try {
       const pm2Output = await sshManager.executeCommand(vpsId, 'pm2 jlist 2>/dev/null || echo "[]"');
@@ -32,13 +38,18 @@ router.get('/:id/processes', async (req: AuthRequest, res: Response): Promise<vo
           actualStatus: pm2Process ? pm2Process.pm2_env.status : 'stopped',
           cpu: pm2Process?.monit?.cpu || 0,
           memory: pm2Process?.monit?.memory || 0,
+          url: `http://${vps?.host}:${d.port}`,
         };
       });
 
       res.json({ processes: processesWithStatus });
     } catch {
-      // PM2 not available, return DB status
-      res.json({ processes: deployments });
+      // PM2 not available, return DB status with URLs
+      const processesWithUrls = deployments.map((d) => ({
+        ...d,
+        url: `http://${vps?.host}:${d.port}`,
+      }));
+      res.json({ processes: processesWithUrls });
     }
   } catch (error: any) {
     res.status(500).json({ error: error.message });

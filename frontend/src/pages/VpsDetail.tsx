@@ -3,6 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Terminal as TerminalIcon, Folder, Activity, ExternalLink } from 'lucide-react';
 import api from '../utils/api';
 import XtermTerminal from '../components/Terminal/XtermTerminal';
+import FileManager from '../components/VPS/FileManager';
+import ProcessManager from '../components/VPS/ProcessManager';
+import PortManager from '../components/VPS/PortManager';
 
 const VpsDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -108,9 +111,33 @@ const VpsDetail: React.FC = () => {
               </div>
             )
           )}
-          {activeTab === 'files' && <p className="text-center text-muted">File browser coming soon...</p>}
-          {activeTab === 'processes' && <p className="text-center text-muted">Process manager coming soon...</p>}
-          {activeTab === 'ports' && <p className="text-center text-muted">Port manager coming soon...</p>}
+          {activeTab === 'files' && (
+            profile.isConnected ? (
+              <FileManager vpsId={profile.id} />
+            ) : (
+              <div className="flex-center" style={{ height: '100%', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                <p className="text-secondary">Connect to the VPS to browse files.</p>
+              </div>
+            )
+          )}
+          {activeTab === 'processes' && (
+            profile.isConnected ? (
+              <ProcessManager vpsId={profile.id} />
+            ) : (
+              <div className="flex-center" style={{ height: '100%', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                <p className="text-secondary">Connect to the VPS to manage deployments.</p>
+              </div>
+            )
+          )}
+          {activeTab === 'ports' && (
+            profile.isConnected ? (
+              <PortManager vpsId={profile.id} />
+            ) : (
+              <div className="flex-center" style={{ height: '100%', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                <p className="text-secondary">Connect to the VPS to view active ports.</p>
+              </div>
+            )
+          )}
         </div>
       </div>
     </div>
