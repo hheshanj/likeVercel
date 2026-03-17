@@ -1,11 +1,14 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Server, Settings, Terminal as TerminalIcon } from 'lucide-react';
+import { LayoutDashboard, Server, Settings, Terminal as TerminalIcon, User as UserIcon, LogOut, Activity } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const Sidebar: React.FC = () => {
+  const { user, logout } = useAuth();
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'Endpoints', path: '/endpoints', icon: <Server size={20} /> },
+    { name: 'Apps', path: '/apps', icon: <Activity size={20} /> },
     { name: 'Settings', path: '/settings', icon: <Settings size={20} /> },
   ];
 
@@ -52,6 +55,67 @@ const Sidebar: React.FC = () => {
           </NavLink>
         ))}
       </nav>
+
+      {/* User Info & Logout */}
+      <div style={{
+        padding: 'var(--space-4)',
+        borderTop: '1px solid var(--border-color)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'var(--space-3)'
+      }}>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 'var(--space-3)', 
+          padding: 'var(--space-2) var(--space-1)'
+        }}>
+          <div style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            background: 'var(--accent-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            fontWeight: 600,
+            fontSize: '14px'
+          }}>
+            {user?.name?.charAt(0).toUpperCase() || <UserIcon size={16} />}
+          </div>
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {user?.name || 'User'}
+            </p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {user?.email || 'user@example.com'}
+            </p>
+          </div>
+        </div>
+        
+        <button 
+          onClick={logout}
+          className="btn-secondary"
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            gap: 'var(--space-2)', 
+            padding: 'var(--space-2)',
+            width: '100%',
+            fontSize: '0.875rem',
+            border: '1px solid var(--border-color)',
+            background: 'transparent',
+            borderRadius: 'var(--radius-md)',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer'
+          }}
+        >
+          <LogOut size={16} />
+          Logout
+        </button>
+      </div>
     </aside>
   );
 };
