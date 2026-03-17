@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Terminal as TerminalIcon, Folder, Activity, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Terminal as TerminalIcon, Folder, Activity, ExternalLink, Globe2 } from 'lucide-react';
 import api from '../utils/api';
 import XtermTerminal from '../components/Terminal/XtermTerminal';
 import FileManager from '../components/VPS/FileManager';
 import ProcessManager from '../components/VPS/ProcessManager';
 import PortManager from '../components/VPS/PortManager';
+import ProxyManager from '../components/VPS/ProxyManager';
 
 const VpsDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'terminal' | 'files' | 'processes' | 'ports'>('terminal');
+  const [activeTab, setActiveTab] = useState<'terminal' | 'files' | 'processes' | 'ports' | 'domains'>('terminal');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -36,6 +37,7 @@ const VpsDetail: React.FC = () => {
     { id: 'files', label: 'Files', icon: <Folder size={18} /> },
     { id: 'processes', label: 'Processes', icon: <Activity size={18} /> },
     { id: 'ports', label: 'Ports', icon: <ExternalLink size={18} /> },
+    { id: 'domains', label: 'Domains', icon: <Globe2 size={18} /> },
   ];
 
   return (
@@ -135,6 +137,15 @@ const VpsDetail: React.FC = () => {
             ) : (
               <div className="flex-center" style={{ height: '100%', flexDirection: 'column', gap: 'var(--space-4)' }}>
                 <p className="text-secondary">Connect to the VPS to view active ports.</p>
+              </div>
+            )
+          )}
+          {activeTab === 'domains' && (
+            profile.isConnected ? (
+              <ProxyManager vpsId={profile.id} />
+            ) : (
+              <div className="flex-center" style={{ height: '100%', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                <p className="text-secondary">Connect to the VPS to manage domains.</p>
               </div>
             )
           )}

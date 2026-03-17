@@ -16,6 +16,7 @@ import vpsRoutes from './routes/vps';
 import fileRoutes from './routes/files';
 import processRoutes from './routes/processes';
 import portRoutes from './routes/ports';
+import proxyRoutes from './routes/proxy';
 
 const app = express();
 const httpServer = createServer(app);
@@ -71,6 +72,7 @@ app.use('/api/vps', vpsRoutes);
 app.use('/api/vps', fileRoutes);
 app.use('/api/vps', processRoutes);
 app.use('/api/vps', portRoutes);
+app.use('/api/vps', proxyRoutes);
 
 // Health check with DB ping (Fix 18)
 app.get('/api/health', async (_req, res) => {
