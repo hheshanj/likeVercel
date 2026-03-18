@@ -61,7 +61,7 @@ const Dashboard: React.FC = () => {
     setFetchingSpecs(prev => ({ ...prev, [id]: true }));
     try {
       const { data } = await api.get(`/vps/${id}/specs`);
-      setSpecs(prev => ({ ...prev, [id]: data.specs }));
+      setSpecs(prev => ({ ...prev, [id]: data }));
     } catch (err) {
       console.error('Failed to fetch node specs', err);
     } finally {
@@ -144,20 +144,28 @@ const Dashboard: React.FC = () => {
             { label: 'Total Infrastructure', value: profiles.length, sub: 'Clusters', icon: <Server size={22} />, color: 'blue' },
             { label: 'Active Connections', value: profiles.filter(p => p.isConnected).length, sub: 'Live Nodes', icon: <Zap size={22} />, color: 'emerald' },
             { label: 'Idle Resources', value: profiles.filter(p => !p.isConnected).length, sub: 'Dormant', icon: <PowerOff size={22} />, color: 'red' }
-          ].map((metric, i) => (
-            <div key={metric.label} className="glass-effect p-8 rounded-[32px] border border-black/20 relative overflow-hidden group hover:bg-bg-secondary/40 transition-all duration-300 shadow-2xl">
-               <div className="flex items-center justify-between mb-6">
-                  <span className="text-xs font-bold text-text-secondary tracking-widest uppercase">{metric.label}</span>
-                  <div className={`p-3 bg-${metric.color}-500/10 text-${metric.color}-500 rounded-xl shadow-inner`}>
-                     {metric.icon}
-                  </div>
-               </div>
-               <div className="flex items-baseline space-x-3">
-                  <span className="text-4xl font-bold text-text-primary tracking-tight">{metric.value}</span>
-                  <span className="text-xs font-bold text-text-muted tracking-wide uppercase opacity-60">{metric.sub}</span>
-               </div>
-            </div>
-          ))}
+          ].map((metric, i) => {
+            const colorClasses: Record<string, string> = {
+              blue: 'bg-blue-500/10 text-blue-500',
+              emerald: 'bg-emerald-500/10 text-emerald-500',
+              red: 'bg-red-500/10 text-red-500'
+            };
+            
+            return (
+              <div key={metric.label} className="glass-effect p-8 rounded-[32px] border border-black/20 relative overflow-hidden group hover:bg-bg-secondary/40 transition-all duration-300 shadow-2xl">
+                 <div className="flex items-center justify-between mb-6">
+                    <span className="text-xs font-bold text-text-secondary tracking-widest uppercase">{metric.label}</span>
+                    <div className={`p-3 ${colorClasses[metric.color] || 'bg-bg-tertiary text-text-muted'} rounded-xl shadow-inner`}>
+                       {metric.icon}
+                    </div>
+                 </div>
+                 <div className="flex items-baseline space-x-3">
+                    <span className="text-4xl font-bold text-text-primary tracking-tight">{metric.value}</span>
+                    <span className="text-xs font-bold text-text-muted tracking-wide uppercase opacity-60">{metric.sub}</span>
+                 </div>
+              </div>
+            );
+          })}
         </section>
 
         {/* Server Grid Area */}
