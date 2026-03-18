@@ -29,7 +29,8 @@ const Register: React.FC = () => {
       login(data.accessToken, data.refreshToken, data.user);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to register account.');
+      const detailedError = err.response?.data?.details?.[0]?.message;
+      setError(detailedError || err.response?.data?.error || 'Failed to register account.');
     } finally {
       setLoading(false);
     }
