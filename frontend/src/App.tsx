@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import VpsDetail from './pages/VpsDetail';
 import Settings from './pages/Settings';
 import AddVps from './pages/AddVps';
+import EditVps from './pages/EditVps';
 import Layout from './components/Layout/Layout';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
@@ -18,7 +19,6 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     </div>
   );
   
-  // Use the 'user' object from useAuth instead of undefined 'isAuthenticated'
   return user ? <Layout>{children}</Layout> : <Navigate to="/login" />;
 };
 
@@ -55,6 +55,14 @@ const App: React.FC = () => {
           element={
             <PrivateRoute>
               <VpsDetail />
+            </PrivateRoute>
+          } 
+        />
+        <Route 
+          path="/vps/:id/edit" 
+          element={
+            <PrivateRoute>
+              <EditVps />
             </PrivateRoute>
           } 
         />

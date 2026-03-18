@@ -106,7 +106,7 @@ const Dashboard: React.FC = () => {
   if (loading) return (
     <div className="flex flex-col h-full bg-bg-primary items-center justify-center space-y-4">
        <Loader2 size={40} className="text-blue-500 animate-spin" />
-       <span className="text-text-secondary font-bold tracking-widest text-xs uppercase">Synchronizing Core</span>
+       <span className="text-text-secondary font-bold tracking-widest text-xs uppercase">Loading...</span>
     </div>
   );
 
@@ -115,9 +115,9 @@ const Dashboard: React.FC = () => {
       {/* Refined Header */}
       <header className="sticky top-0 z-30 px-8 py-8 flex items-center justify-between border-b border-black/20 bg-bg-primary/80 backdrop-blur-xl">
         <div>
-          <div className="flex items-center space-x-2 text-[10px] font-bold uppercase tracking-[0.3em] text-blue-500 mb-1.5">
+          <div className="flex items-center space-x-2 text-[10px] font-bold uppercase tracking-[0.2em] text-blue-500 mb-1.5">
              <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-             <span>Core Dashboard</span>
+             <span>Dashboard Overview</span>
           </div>
           <h1 className="text-3xl font-bold tracking-tighter text-text-primary">Overview</h1>
         </div>
@@ -126,7 +126,7 @@ const Dashboard: React.FC = () => {
           className="flex items-center space-x-3 px-8 py-3.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-2xl shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-95 group"
         >
           <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-          <span>Connect Node</span>
+          <span>Add Node</span>
         </button>
       </header>
       
@@ -141,10 +141,10 @@ const Dashboard: React.FC = () => {
         {/* Refined Metrics Cards */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-8" data-purpose="metrics-summary">
           {[
-            { label: 'Total Infrastructure', value: profiles.length, sub: 'Clusters', icon: <Server size={22} />, color: 'blue' },
-            { label: 'Active Connections', value: profiles.filter(p => p.isConnected).length, sub: 'Live Nodes', icon: <Zap size={22} />, color: 'emerald' },
-            { label: 'Idle Resources', value: profiles.filter(p => !p.isConnected).length, sub: 'Dormant', icon: <PowerOff size={22} />, color: 'red' }
-          ].map((metric, i) => {
+            { label: 'Total Servers', value: profiles.length, sub: 'Nodes', icon: <Server size={22} />, color: 'blue' },
+            { label: 'Online Nodes', value: profiles.filter(p => p.isConnected).length, sub: 'Active', icon: <Zap size={22} />, color: 'emerald' },
+            { label: 'Offline Nodes', value: profiles.filter(p => !p.isConnected).length, sub: 'Idle', icon: <PowerOff size={22} />, color: 'red' }
+          ].map((metric) => {
             const colorClasses: Record<string, string> = {
               blue: 'bg-blue-500/10 text-blue-500',
               emerald: 'bg-emerald-500/10 text-emerald-500',
@@ -173,7 +173,7 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between mb-8 px-1">
              <div className="flex items-center space-x-4">
                 <div className="h-1.5 w-10 bg-blue-600 rounded-full" />
-                <h2 className="text-base font-bold text-text-primary tracking-widest uppercase opacity-80">Compute Core</h2>
+                <h2 className="text-base font-bold text-text-primary tracking-widest uppercase opacity-80">Server Grid</h2>
              </div>
              <div className="flex space-x-2.5">
                 <button className="p-2 bg-bg-secondary border border-border-light text-text-secondary rounded-xl hover:text-text-primary transition-all shadow-md active:scale-95">
@@ -191,13 +191,13 @@ const Dashboard: React.FC = () => {
                  <div className="p-8 bg-bg-secondary rounded-full mb-8 border border-border-light shadow-inner">
                     <Server size={48} className="text-text-muted/30" />
                  </div>
-                 <h3 className="text-2xl font-bold text-text-primary mb-3 tracking-tight">No Registered Endpoints</h3>
-                 <p className="text-text-secondary max-w-sm mb-12 text-sm font-medium leading-relaxed">Initialize your first remote deployment node via SSH credentials to begin orchestration.</p>
+                 <h3 className="text-2xl font-bold text-text-primary mb-3 tracking-tight">No Servers Found</h3>
+                 <p className="text-text-secondary max-w-sm mb-12 text-sm font-medium leading-relaxed">Add your first remote server via SSH to start managing your apps.</p>
                  <button 
                     onClick={() => navigate('/vps/add')}
                     className="px-12 py-4 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-2xl shadow-2xl transition-all active:scale-95"
                  >
-                    Initialize First Node
+                    Add First Server
                  </button>
               </div>
             ) : profiles.map(vps => (

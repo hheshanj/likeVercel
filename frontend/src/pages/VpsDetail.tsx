@@ -8,9 +8,9 @@ import {
   ExternalLink, 
   Globe2,
   Settings as SettingsIcon,
-  ShieldCheck,
   Zap,
-  Server
+  Server,
+  Loader2
 } from 'lucide-react';
 import api from '../utils/api';
 import XtermTerminal from '../components/Terminal/XtermTerminal';
@@ -25,6 +25,8 @@ const VpsDetail: React.FC = () => {
   const location = useLocation();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [pingResult, setPingResult] = useState<string | null>(null);
+  const [pinging, setPinging] = useState(false);
   
   // Get tab from URL search param if exists
   const queryParams = new URLSearchParams(location.search);
@@ -50,7 +52,7 @@ const VpsDetail: React.FC = () => {
   if (loading) return (
     <div className="flex flex-col h-full bg-bg-primary items-center justify-center space-y-4">
        <Zap size={32} className="text-blue-500 animate-pulse" />
-       <span className="text-xs font-bold tracking-widest text-text-muted">Synchronizing Hub</span>
+       <span className="text-xs font-bold tracking-widest text-text-muted">Loading...</span>
     </div>
   );
   
@@ -73,7 +75,7 @@ const VpsDetail: React.FC = () => {
           className="flex items-center space-x-2 text-text-secondary hover:text-text-primary transition-colors mb-5 group text-xs font-bold tracking-tight"
         >
           <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-          <span>Nodes Registry</span>
+          <span>Back to Dashboard</span>
         </button>
 
         <div className="flex items-center justify-between">
@@ -86,11 +88,11 @@ const VpsDetail: React.FC = () => {
                 <h1 className="text-2xl font-bold text-text-primary tracking-tight">{profile.name}</h1>
                 {profile.isConnected ? (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 tracking-widest">
-                    Live
+                    Online
                   </span>
                 ) : (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-bg-tertiary text-text-muted border border-border-light tracking-widest">
-                    Dormant
+                    Offline
                   </span>
                 )}
               </div>
@@ -99,12 +101,43 @@ const VpsDetail: React.FC = () => {
           </div>
           
           <div className="flex items-center space-x-3">
-            <button className="p-2.5 bg-bg-tertiary/50 hover:bg-bg-tertiary text-text-secondary rounded-xl transition-all border border-border-light font-bold">
-              <SettingsIcon size={18} />
+            <button 
+              onClick={() => navigate(`/vps/${id}/edit`)} // Assuming we'll add an edit route
+              className="flex items-center space-x-2 px-6 py-3 bg-bg-secondary hover:bg-bg-tertiary text-text-primary font-bold text-xs rounded-xl border border-black/10 transition-all shadow-sm active:scale-95 group h-[42px]"
+            >
+              <SettingsIcon size={16} className="text-text-muted group-hover:text-blue-500 transition-colors" />
+              <span>Edit Settings</span>
             </button>
-            <button className="flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-xl transition-all active:scale-95">
-              <ShieldCheck size={18} />
-              <span>Verify Cluster</span>
+            <button 
+              onClick={async () => {
+                if (pinging) return;
+                setPinging(true);
+                setPingResult(null);
+                try {
+                  const start = Date.now();
+                  await api.get(`/vps/${id}/status`);
+                  const latency = Date.now() - start;
+                  setPingResult(`${latency}ms`);
+                  setTimeout(() => setPingResult(null), 3000); // Clear after 3s
+                } catch (e) {
+                  setPingResult('FAIL');
+                } finally {
+                  setPinging(false);
+                }
+              }}
+              disabled={pinging}
+              className={`flex items-center space-x-2 px-6 py-3 ${pingResult === 'FAIL' ? 'bg-red-500' : 'bg-blue-600 hover:bg-blue-500'} text-white font-bold text-xs rounded-xl shadow-xl transition-all active:scale-95 shadow-blue-600/20 disabled:opacity-80 w-[140px] h-[42px] justify-center overflow-hidden`}
+            >
+              {pinging ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : pingResult ? (
+                <span className="animate-in zoom-in-95 duration-200">{pingResult}</span>
+              ) : (
+                <>
+                  <Zap size={16} fill="white" />
+                  <span>Ping</span>
+                </>
+              )}
             </button>
           </div>
         </div>

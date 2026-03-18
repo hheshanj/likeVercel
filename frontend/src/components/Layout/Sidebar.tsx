@@ -32,7 +32,7 @@ const Sidebar: React.FC = () => {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto custom-scrollbar py-2">
-        <p className="px-3 text-xs font-bold text-text-muted uppercase tracking-[0.15em] mb-3 mt-4 opacity-70">Orchestration</p>
+        <p className="px-3 text-xs font-bold text-text-muted uppercase tracking-[0.1em] mb-3 mt-4 opacity-70">System Menu</p>
         
         <NavLink 
           to="/dashboard" 
@@ -71,7 +71,7 @@ const Sidebar: React.FC = () => {
         </NavLink>
 
         <div className="py-6">
-           <p className="px-3 text-xs font-bold text-text-muted uppercase tracking-[0.15em] mb-3 opacity-70">Authority</p>
+           <p className="px-3 text-xs font-bold text-text-muted uppercase tracking-[0.1em] mb-3 opacity-70">General</p>
            
             <NavLink 
               to="/settings" 
