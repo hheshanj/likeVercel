@@ -24,11 +24,11 @@ const Sidebar: React.FC = () => {
     <div className="w-64 h-full bg-white border-r border-slate-200 flex flex-col z-40 shrink-0">
       {/* Brand Header */}
       <div className="p-8 pb-6">
-        <div className="flex items-center space-x-3 mb-1 cursor-pointer" onClick={() => navigate('/dashboard')}>
-          <div className="p-2 bg-blue-600 rounded-lg text-white">
+        <div className="flex items-center space-x-3 mb-1 cursor-pointer group" onClick={() => navigate('/dashboard')}>
+          <div className="p-2 icon-grad-blue rounded-lg text-white shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
             <Box size={20} />
           </div>
-          <span className="text-xl font-bold tracking-tighter text-slate-900">likeVercel</span>
+          <span className="text-xl font-black tracking-tighter text-slate-900 bg-clip-text">likeVercel</span>
         </div>
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Infrastructure V2.1</p>
       </div>
@@ -37,7 +37,7 @@ const Sidebar: React.FC = () => {
       <div className="px-6 mb-8">
         <button 
           onClick={() => navigate('/vps/add')}
-          className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/20 transition-all active:scale-95 flex items-center justify-center space-x-2"
+          className="w-full py-3 icon-grad-blue hover:opacity-90 text-white rounded-xl text-xs font-bold shadow-xl shadow-blue-600/20 transition-all active:scale-95 flex items-center justify-center space-x-2 border border-blue-400/20"
         >
           <Plus size={16} />
           <span>New Instance</span>
@@ -51,9 +51,9 @@ const Sidebar: React.FC = () => {
             key={item.path}
             to={item.path}
             className={({ isActive }) => 
-              `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${
+              `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all text-sm font-bold ${
                 isActive 
-                ? 'bg-blue-50 text-blue-600' 
+                ? 'bg-blue-50 text-blue-600 shadow-sm border border-blue-100/50 shadow-blue-500/5' 
                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
               }`
             }

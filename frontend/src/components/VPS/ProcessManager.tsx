@@ -361,17 +361,17 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
                   const isOnline = status === 'online' || status === 'running';
                   
                   return (
-                    <div key={dep.id} className="group glass-effect rounded-[24px] border border-border-light hover:border-blue-500/20 transition-all duration-300 overflow-hidden shadow-xl">
+                    <div key={dep.id} className="group premium-card glass-effect rounded-[24px] border border-border-light hover:border-blue-500/30 transition-all duration-300 overflow-hidden shadow-xl">
                       <div className="p-5 flex flex-col xl:flex-row xl:items-center justify-between gap-5">
                         <div className="flex items-center space-x-4">
-                          <div className={`p-4 rounded-2xl ${status === 'online' ? 'bg-emerald-500/10' : 'bg-bg-tertiary'} transition-all shadow-inner`}>
-                             <Activity size={24} className={status === 'online' ? 'text-emerald-500' : 'text-text-muted'} />
+                          <div className={`p-4 rounded-2xl ${status === 'online' ? 'icon-grad-blue shadow-[0_0_20px_rgba(59,130,246,0.2)]' : 'bg-bg-tertiary'} transition-all shadow-inner`}>
+                             <Activity size={24} className={status === 'online' ? 'text-white' : 'text-text-muted'} />
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center space-x-3 mb-1.5">
                               <h5 className="font-bold text-text-primary truncate max-w-[150px] sm:max-w-xs tracking-tight text-[13px]">{dep.processName}</h5>
-                              <div className={`flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full border ${getStatusClasses(status)}`}>
-                                 <div className={`h-1.5 w-1.5 rounded-full ${getDotColor(status)} ${isOnline ? 'animate-pulse' : ''}`} />
+                              <div className={`flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full border ${getStatusClasses(status)} shadow-sm`}>
+                                 <div className={`h-1.5 w-1.5 rounded-full ${getDotColor(status)} ${isOnline ? 'animate-pulse-soft shadow-[0_0_8px_currentColor]' : ''}`} />
                                  <span className="text-[9px] font-bold uppercase tracking-widest">{status}</span>
                               </div>
                             </div>
@@ -449,11 +449,11 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
                 {unmanaged.filter(p => 
                   p.processName.toLowerCase().includes(searchTerm.toLowerCase())
                 ).map((proc) => (
-                  <div key={proc.pm_id || `port-${proc.port}`} className="group glass-effect rounded-[24px] border border-border-light bg-amber-500/[0.02] hover:border-amber-500/20 transition-all duration-300 overflow-hidden shadow-xl">
+                  <div key={proc.pm_id || `port-${proc.port}`} className="group premium-card glass-effect rounded-[24px] border border-border-light bg-amber-500/[0.02] hover:border-amber-500/30 transition-all duration-300 overflow-hidden shadow-xl">
                     <div className="p-5 flex flex-col xl:flex-row xl:items-center justify-between gap-5">
                       <div className="flex items-center space-x-4">
-                        <div className="p-4 rounded-2xl bg-amber-500/5 transition-all shadow-inner">
-                          <Activity size={24} className="text-amber-500" />
+                        <div className={`p-4 rounded-2xl ${proc.type === 'port' ? 'icon-grad-amber shadow-[0_0_20px_rgba(245,158,11,0.2)]' : 'icon-grad-indigo shadow-[0_0_20px_rgba(79,70,229,0.2)]'} transition-all shadow-inner`}>
+                          <Activity size={24} className="text-white" />
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center space-x-3 mb-1.5">

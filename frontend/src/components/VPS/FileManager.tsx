@@ -59,21 +59,41 @@ function timeAgo(dateStr: string): string {
 }
 
 function getFileIcon(name: string, isDirectory: boolean) {
-  if (isDirectory) return <Folder size={16} className="text-blue-500" />;
+  if (isDirectory) return (
+    <div className="p-2 rounded-xl icon-grad-blue shadow-lg shadow-blue-500/20 text-white">
+      <Folder size={18} />
+    </div>
+  );
+  
   const ext = name.split('.').pop()?.toLowerCase() || '';
-  if (['js', 'ts', 'jsx', 'tsx', 'py', 'rb', 'go', 'rs', 'java', 'c', 'cpp', 'h', 'css', 'scss', 'html', 'vue', 'svelte'].includes(ext))
-    return <FileCode size={16} className="text-indigo-500" />;
-  if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico', 'bmp'].includes(ext))
-    return <ImageIcon size={16} className="text-pink-500" />;
-  if (['zip', 'gz', 'tar', 'rar', '7z', 'bz2'].includes(ext))
-    return <Archive size={16} className="text-amber-500" />;
-  if (['mp4', 'avi', 'mov', 'mkv', 'webm'].includes(ext))
-    return <Film size={16} className="text-emerald-500" />;
-  if (['mp3', 'wav', 'ogg', 'flac', 'aac'].includes(ext))
-    return <Music size={16} className="text-orange-500" />;
-  if (['md', 'txt', 'log', 'json', 'yaml', 'yml', 'toml', 'xml', 'csv', 'env'].includes(ext))
-    return <FileText size={16} className="text-text-muted" />;
-  return <File size={16} className="text-text-muted" />;
+  let grad = 'bg-bg-tertiary';
+  let icon = <File size={18} />;
+
+  if (['js', 'ts', 'jsx', 'tsx', 'py', 'rb', 'go', 'rs', 'java', 'c', 'cpp', 'h', 'css', 'scss', 'html', 'vue', 'svelte'].includes(ext)) {
+    grad = 'icon-grad-indigo';
+    icon = <FileCode size={18} />;
+  } else if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico', 'bmp'].includes(ext)) {
+    grad = 'icon-grad-rose';
+    icon = <ImageIcon size={18} />;
+  } else if (['zip', 'gz', 'tar', 'rar', '7z', 'bz2'].includes(ext)) {
+    grad = 'icon-grad-amber';
+    icon = <Archive size={18} />;
+  } else if (['mp4', 'avi', 'mov', 'mkv', 'webm'].includes(ext)) {
+    grad = 'icon-grad-emerald';
+    icon = <Film size={18} />;
+  } else if (['mp3', 'wav', 'ogg', 'flac', 'aac'].includes(ext)) {
+    grad = 'icon-grad-amber'; // reuse amber or add orange
+    icon = <Music size={18} />;
+  } else if (['md', 'txt', 'log', 'json', 'yaml', 'yml', 'toml', 'xml', 'csv', 'env'].includes(ext)) {
+    grad = 'bg-slate-500';
+    icon = <FileText size={18} />;
+  }
+
+  return (
+    <div className={`p-2 rounded-xl ${grad} text-white shadow-md`}>
+      {icon}
+    </div>
+  );
 }
 
 const FileManager: React.FC<FileManagerProps> = ({ vpsId }) => {
@@ -239,101 +259,116 @@ const FileManager: React.FC<FileManagerProps> = ({ vpsId }) => {
   return (
     <>
     <div
-      className={`flex flex-col h-full space-y-4 relative transition-all ${isDragging ? 'ring-2 ring-blue-500 ring-inset rounded-[28px]' : ''}`}
+      className={`flex flex-col h-full space-y-5 relative transition-all ${isDragging ? 'ring-4 ring-blue-500/20 ring-inset rounded-[32px]' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       {/* Drag Overlay */}
       {isDragging && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[28px] bg-blue-600/10 border-2 border-dashed border-blue-500 backdrop-blur-sm pointer-events-none">
-          <div className="text-center">
-            <Upload size={40} className="text-blue-500 mx-auto mb-3" />
-            <p className="text-sm font-bold text-blue-500">Drop files to upload</p>
+        <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[32px] bg-blue-600/10 border-4 border-dashed border-blue-500/50 backdrop-blur-md pointer-events-none animate-in fade-in duration-300">
+          <div className="text-center p-12 bg-white/90 rounded-[40px] shadow-2xl border border-blue-500/20">
+            <div className="p-6 icon-grad-blue rounded-full text-white shadow-xl shadow-blue-500/30 w-fit mx-auto mb-6">
+              <Upload size={48} className="animate-bounce" />
+            </div>
+            <p className="text-xl font-black text-slate-900 tracking-tight mb-2">Release files to ingest</p>
+            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Protocol Upload Mode</p>
           </div>
         </div>
       )}
-      {/* Search and Navigation Bar */}
-      <div className="flex flex-col sm:flex-row items-center gap-4">
-        {/* Breadcrumb Navigation */}
-        <div className="flex items-center space-x-1 flex-1 min-w-0 bg-bg-secondary border border-border-light rounded-xl px-4 py-2.5 overflow-x-auto no-scrollbar shadow-inner">
+
+      {/* Navigation and Toolbar */}
+      <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-4">
+        {/* Modern Breadcrumb */}
+        <div className="flex items-center flex-1 min-w-0 bg-white border border-slate-200 rounded-[20px] p-1.5 shadow-sm group">
           <button
             onClick={() => navigateTo('/')}
-            className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all flex-shrink-0"
-            title="Root Storage"
+            className="p-3 text-blue-600 hover:bg-blue-50 rounded-2xl transition-all flex-shrink-0"
           >
-            <Home size={16} />
+            <Home size={18} />
           </button>
-          {breadcrumbs.map((crumb, i) => (
-            <React.Fragment key={i}>
-              <ChevronRight size={14} className="text-text-muted/30 flex-shrink-0" />
-              <button
-                onClick={() => navigateTo('/' + breadcrumbs.slice(0, i + 1).join('/'))}
-                className={`px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all tracking-tight ${
-                  i === breadcrumbs.length - 1 
-                  ? 'text-text-primary bg-bg-tertiary/20 cursor-default shadow-sm' 
-                  : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary/30'
-                }`}
-              >
-                {crumb}
-              </button>
-            </React.Fragment>
-          ))}
+          
+          <div className="flex items-center overflow-x-auto no-scrollbar px-2 space-x-1">
+            {breadcrumbs.map((crumb, i) => (
+              <React.Fragment key={i}>
+                <ChevronRight size={14} className="text-slate-300 flex-shrink-0 mx-1" />
+                <button
+                  onClick={() => navigateTo('/' + breadcrumbs.slice(0, i + 1).join('/'))}
+                  className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all uppercase tracking-tight ${
+                    i === breadcrumbs.length - 1 
+                    ? 'text-slate-900 bg-slate-50 cursor-default shadow-sm border border-slate-200/50' 
+                    : 'text-slate-500 hover:text-blue-600 hover:bg-blue-50'
+                  }`}
+                >
+                  {crumb}
+                </button>
+              </React.Fragment>
+            ))}
+          </div>
         </div>
 
-        {/* Global Search */}
-        <div className="relative w-full sm:w-64">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input 
-            type="text" 
-            placeholder="Search filenames..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-bg-secondary border border-border-light rounded-xl pl-9 pr-4 py-2.5 text-xs text-text-primary outline-none focus:border-blue-500/50 transition-all font-medium"
-          />
-        </div>
+        {/* Unified Search & Actions */}
+        <div className="flex items-center space-x-3">
+          <div className="relative group flex-1 xl:flex-none">
+            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+            <input 
+              type="text" 
+              placeholder="Search directory..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full xl:w-64 bg-white border border-slate-200 rounded-[20px] pl-11 pr-5 py-3 text-xs text-slate-900 outline-none focus:border-blue-500/30 transition-all font-bold placeholder:text-slate-400 shadow-sm"
+            />
+          </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center space-x-2 flex-shrink-0">
-          <button onClick={navigateUp} className="p-2.5 bg-bg-tertiary/50 hover:bg-bg-tertiary text-text-secondary rounded-xl border border-border-light transition-all shadow-md">
-            <ArrowUp size={18} />
-          </button>
-          <button onClick={() => fetchFiles(currentPath)} className="p-2.5 bg-bg-tertiary/50 hover:bg-bg-tertiary text-text-secondary rounded-xl border border-border-light transition-all shadow-md">
-            <RefreshCw className={loading ? 'animate-spin' : ''} size={18} />
-          </button>
-          <div className="w-px h-6 bg-border-light mx-1" />
-          <button onClick={() => setShowNewFolder(true)} className="p-2.5 bg-bg-tertiary/50 hover:bg-bg-tertiary text-text-secondary rounded-xl border border-border-light transition-all shadow-md">
-            <FolderPlus size={18} />
-          </button>
-          <button onClick={() => fileInputRef.current?.click()} className="flex items-center space-x-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition-all shadow-xl active:scale-95">
+          <div className="flex items-center bg-white border border-slate-200 rounded-[20px] p-1 shadow-sm">
+            <button onClick={navigateUp} className="p-2.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Go Up">
+              <ArrowUp size={18} />
+            </button>
+            <button onClick={() => fetchFiles(currentPath)} className="p-2.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Refresh">
+              <RefreshCw className={loading ? 'animate-spin' : ''} size={18} />
+            </button>
+            <div className="w-px h-6 bg-slate-200 mx-1" />
+            <button onClick={() => setShowNewFolder(true)} className="p-2.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="New Directory">
+              <FolderPlus size={18} />
+            </button>
+          </div>
+
+          <button 
+            onClick={() => fileInputRef.current?.click()} 
+            className="flex items-center space-x-2 px-6 py-3 icon-grad-blue hover:opacity-90 text-white font-black text-xs rounded-[20px] transition-all shadow-xl shadow-blue-600/20 active:scale-95 border border-blue-400/20 uppercase tracking-widest"
+          >
             <Upload size={18} />
-            <span className="hidden xl:inline">Upload</span>
+            <span className="hidden sm:inline">Upload</span>
           </button>
           <input ref={fileInputRef} type="file" multiple onChange={handleInputChange} className="hidden" />
         </div>
       </div>
 
-      {/* Progress and Warnings */}
       {uploadProgress !== null && (
-        <div className="h-1.5 w-full bg-bg-secondary rounded-full overflow-hidden shadow-inner">
-           <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner border border-slate-200/50">
+           <div className="h-full icon-grad-blue transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
         </div>
       )}
 
       {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl flex items-center justify-between text-xs font-bold animate-in slide-in-from-top-2">
-          <span>{error}</span>
-          <button onClick={() => setError('')} className="p-1 hover:bg-red-500/20 rounded-md transition-all"><X size={16} /></button>
+        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-600 rounded-2xl flex items-center justify-between text-[11px] font-black uppercase tracking-widest animate-in slide-in-from-top-2">
+          <div className="flex items-center space-x-3">
+             <X className="text-red-500" size={16} />
+             <span>{error}</span>
+          </div>
+          <button onClick={() => setError('')} className="p-1 hover:bg-red-500/20 rounded-lg transition-all"><X size={14} /></button>
         </div>
       )}
 
       {showNewFolder && (
-        <div className="p-4 bg-bg-secondary border border-blue-500/20 rounded-2xl flex items-center space-x-4 animate-in zoom-in-95 duration-200 shadow-xl">
-           <Folder size={18} className="text-blue-500" />
+        <div className="p-4 bg-white border border-blue-500/20 rounded-[24px] flex items-center space-x-4 animate-in zoom-in-95 duration-200 shadow-2xl premium-card">
+           <div className="p-2 icon-grad-blue rounded-xl text-white">
+             <Folder size={18} />
+           </div>
            <input 
               autoFocus
-              className="flex-1 bg-transparent border-none text-text-primary outline-none text-sm placeholder-text-muted font-mono"
-              placeholder="New directory name..."
+              className="flex-1 bg-transparent border-none text-slate-900 outline-none text-sm placeholder:text-slate-400 font-bold tracking-tight"
+              placeholder="System will initialize folder name..."
               value={newFolderName}
               onChange={e => setNewFolderName(e.target.value)}
               onKeyDown={e => {
@@ -344,65 +379,68 @@ const FileManager: React.FC<FileManagerProps> = ({ vpsId }) => {
            <div className="flex space-x-2">
               <button 
                 onClick={handleCreateFolder}
-                className="p-2 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-lg transition-all"
+                className="p-2.5 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-xl transition-all border border-emerald-500/20"
               >
-                {actionLoading === 'mkdir' ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                {actionLoading === 'mkdir' ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
               </button>
               <button 
                 onClick={() => setShowNewFolder(false)}
-                className="p-2 bg-text-muted/10 text-text-muted hover:bg-red-500/10 hover:text-red-500 rounded-lg transition-all"
+                className="p-2.5 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-xl transition-all"
               >
-                <X size={16} />
+                <X size={18} />
               </button>
            </div>
         </div>
       )}
 
-      {/* Main Container */}
-      <div className="flex-1 bg-bg-secondary/40 rounded-[32px] border border-border-light overflow-hidden flex flex-col shadow-2xl">
+      {/* Main File Table */}
+      <div className="flex-1 bg-white rounded-[32px] border border-slate-200 overflow-hidden flex flex-col shadow-xl">
         <div className="overflow-x-auto flex-1 custom-scrollbar">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-bg-secondary/80 text-[10px] font-bold uppercase tracking-widest text-text-muted sticky top-0 z-10">
-                <th className="px-6 py-4">Name</th>
-                <th className="px-6 py-4 w-28 text-right">Size</th>
-                <th className="px-6 py-4 w-36 text-right">Permissions</th>
-                <th className="px-6 py-4 w-40 text-right">Modified</th>
-                <th className="px-6 py-4 w-32 text-right">Actions</th>
+              <tr className="bg-slate-50/80 backdrop-blur-sm text-[10px] font-black uppercase tracking-widest text-slate-400 sticky top-0 z-10 border-b border-slate-200">
+                <th className="px-8 py-5">Name</th>
+                <th className="px-8 py-5 w-32 text-right">Size</th>
+                <th className="px-8 py-5 w-40 text-right">Permissions</th>
+                <th className="px-8 py-5 w-40 text-right">Modified</th>
+                <th className="px-8 py-5 w-32 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border-light">
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="py-20 text-center text-xs font-bold text-text-muted">
+                  <td colSpan={5} className="py-24 text-center">
                     <div className="flex flex-col items-center">
-                      <Loader2 size={32} className="text-blue-500 animate-spin mb-4" />
-                      <span className="uppercase tracking-widest">Reading Storage...</span>
+                      <Loader2 size={48} className="text-blue-500 animate-spin mb-6 opacity-30" />
+                      <span className="uppercase tracking-widest font-black text-slate-300 text-[10px]">Scanning File Clusters...</span>
                     </div>
                   </td>
                 </tr>
               ) : filteredFiles.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-20 text-center text-xs font-bold text-text-muted uppercase tracking-widest">
-                    Directory is empty
+                  <td colSpan={5} className="py-24 text-center">
+                     <div className="p-6 bg-slate-50 rounded-full w-fit mx-auto mb-4 border border-slate-100">
+                       <Folder size={48} className="text-slate-200" />
+                     </div>
+                     <span className="uppercase tracking-widest font-black text-slate-300 text-[10px]">Directory contains no active buffers</span>
                   </td>
                 </tr>
               ) : (
                 filteredFiles.map((file) => (
                   <tr 
                     key={file.path}
-                    className="group hover:bg-bg-tertiary/10 transition-colors cursor-default"
+                    className="group hover:bg-slate-50/80 transition-all cursor-pointer relative premium-card"
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-8 py-5">
                       <div className="flex items-center space-x-4">
-                        <div className="p-2 rounded-xl bg-bg-tertiary/30 group-hover:bg-bg-tertiary/50 transition-colors shadow-inner">
+                        <div className="transition-all duration-300 group-hover:scale-110">
                           {getFileIcon(file.name, file.isDirectory)}
                         </div>
                         {renamingFile === file.path ? (
-                          <div className="flex-1 flex items-center space-x-2">
+                          <div className="flex-1 flex items-center space-x-2 animate-in slide-in-from-left-2 duration-300">
                              <input 
                                 autoFocus
-                                className="bg-bg-primary border border-blue-500/50 rounded-lg px-3 py-1.5 text-xs text-text-primary outline-none font-mono"
+                                className="bg-white border-2 border-blue-500/50 rounded-xl px-4 py-2 text-xs text-slate-900 outline-none font-bold shadow-lg"
                                 value={renameValue}
                                 onChange={e => setRenameValue(e.target.value)}
                                 onKeyDown={e => {
@@ -410,44 +448,44 @@ const FileManager: React.FC<FileManagerProps> = ({ vpsId }) => {
                                   if (e.key === 'Escape') setRenamingFile(null);
                                 }}
                              />
-                             <button onClick={() => handleRename(file.path)} className="text-emerald-500 p-1 hover:bg-emerald-500/10 rounded-md"><Check size={18} /></button>
-                             <button onClick={() => setRenamingFile(null)} className="text-red-500 p-1 hover:bg-red-500/10 rounded-md"><X size={18} /></button>
+                             <button onClick={() => handleRename(file.path)} className="text-emerald-500 p-2 bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-xl transition-all"><Check size={20} /></button>
+                             <button onClick={() => setRenamingFile(null)} className="text-red-500 p-2 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all"><X size={20} /></button>
                           </div>
                         ) : (
                           <span 
                             onClick={() => file.isDirectory && navigateTo(file.path)}
-                            className={`text-xs font-bold truncate max-w-[300px] xl:max-w-md ${file.isDirectory ? 'text-text-primary cursor-pointer hover:text-blue-500' : 'text-text-secondary'}`}
+                            className={`text-[13px] font-bold truncate max-w-[300px] xl:max-w-md tracking-tight ${file.isDirectory ? 'text-slate-900 group-hover:text-blue-600' : 'text-slate-600'} transition-colors`}
                           >
                             {file.name}
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right font-mono text-[10px] text-text-muted">
+                    <td className="px-8 py-5 text-right font-mono text-[10px] text-slate-400 font-bold">
                       {file.isDirectory ? '—' : formatBytes(file.size)}
                     </td>
-                    <td className="px-6 py-4 text-right font-mono text-[10px] text-text-muted tracking-wider">
+                    <td className="px-8 py-5 text-right font-mono text-[10px] text-slate-400 tracking-widest opacity-60">
                       {file.permissions || '—'}
                     </td>
-                    <td className="px-6 py-4 text-right text-[10px] text-text-muted font-bold tracking-tight">
+                    <td className="px-8 py-5 text-right text-[10px] text-slate-500 font-black tracking-tight uppercase">
                       {timeAgo(file.modifiedAt)}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <td className="px-8 py-5 text-right">
+                      <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
                         {!file.isDirectory && (
-                          <button onClick={() => handleDownload(file.path, file.name)} className="p-2 text-text-muted hover:text-text-primary rounded-lg hover:bg-bg-tertiary/20 transition-colors" title="Download">
-                            <Download size={14} />
+                          <button onClick={() => handleDownload(file.path, file.name)} className="p-2.5 bg-slate-100 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all shadow-sm" title="Download">
+                            <Download size={16} />
                           </button>
                         )}
-                        <button onClick={() => { setRenamingFile(file.path); setRenameValue(file.name); }} className="p-2 text-text-muted hover:text-text-primary rounded-lg hover:bg-bg-tertiary/20 transition-colors" title="Rename">
-                          <Edit3 size={14} />
+                        <button onClick={() => { setRenamingFile(file.path); setRenameValue(file.name); }} className="p-2.5 bg-slate-100 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all shadow-sm" title="Rename">
+                          <Edit3 size={16} />
                         </button>
                         <button 
                           onClick={() => handleDelete(file.path, file.name)} 
-                          className="p-2 text-text-muted hover:text-red-500 transition-all rounded-lg hover:bg-red-500/10" 
+                          className="p-2.5 bg-slate-100 text-slate-500 hover:bg-red-500 hover:text-white transition-all rounded-xl shadow-sm" 
                           disabled={actionLoading === file.path}
                         >
-                          {actionLoading === file.path ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                          {actionLoading === file.path ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                         </button>
                       </div>
                     </td>
@@ -457,25 +495,33 @@ const FileManager: React.FC<FileManagerProps> = ({ vpsId }) => {
             </tbody>
           </table>
         </div>
-        <div className="px-8 py-3 bg-bg-secondary border-t border-border-light flex items-center justify-between text-[10px] font-bold text-text-muted">
-           <div className="flex items-center space-x-4">
-              <span>{filteredFiles.length} items</span>
-              <span className="h-1 w-1 bg-border-light rounded-full" />
-              <span>{files.filter(f => f.isDirectory).length} folders</span>
+        
+        {/* Modern Footer Status Bar */}
+        <div className="px-10 py-4 bg-slate-50/80 backdrop-blur-sm border-t border-slate-200 flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
+           <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2">
+                 <span className="text-slate-900">{filteredFiles.length}</span>
+                 <span>Buffers Detected</span>
+              </div>
+              <span className="h-1 w-1 bg-slate-300 rounded-full" />
+              <div className="flex items-center space-x-2">
+                 <span className="text-slate-900">{files.filter(f => f.isDirectory).length}</span>
+                 <span>Clusters</span>
+              </div>
            </div>
-           <div className="flex items-center space-x-2">
-              <span className="font-mono text-blue-500/80 lowercase">{currentPath}</span>
+           <div className="flex items-center space-x-3 group cursor-help">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+              <span className="font-mono text-blue-600/80 transition-all group-hover:text-blue-600">{currentPath}</span>
            </div>
         </div>
       </div>
     </div>
 
-    {/* Confirm Delete File Modal */}
     {confirmDeletePath && (
       <ConfirmModal
-        title="Delete File"
-        message={`Permanently delete "${confirmDeletePath.name}"? This cannot be undone.`}
-        confirmLabel="Delete"
+        title="Purge Object"
+        message={`Authorize permanent deletion of "${confirmDeletePath.name}" from storage array?`}
+        confirmLabel="Purge"
         danger
         onConfirm={confirmDelete}
         onCancel={() => setConfirmDeletePath(null)}
