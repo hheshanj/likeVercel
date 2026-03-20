@@ -14,26 +14,25 @@ import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading, requireSetup } = useAuth();
+  const { user, loading } = useAuth();
   
-  if (loading || requireSetup === null) return (
+  if (loading) return (
     <div className="h-screen w-full flex items-center justify-center bg-bg-primary text-text-primary font-bold uppercase tracking-widest text-xs">
       Initializing Security Protocol...
     </div>
   );
   
   if (!user) {
-    if (requireSetup) return <Navigate to="/register" replace />;
     return <Navigate to="/login" replace />;
   }
   
   return <Layout>{children}</Layout>;
 };
 
-const AuthRoute: React.FC<{ children: React.ReactNode, type: 'login' | 'register' }> = ({ children, type }) => {
-  const { user, loading, requireSetup } = useAuth();
+const AuthRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, loading } = useAuth();
   
-  if (loading || requireSetup === null) return (
+  if (loading) return (
     <div className="h-screen w-full flex items-center justify-center bg-bg-primary text-text-primary font-bold uppercase tracking-widest text-xs">
       Initializing Security Protocol...
     </div>
@@ -41,9 +40,6 @@ const AuthRoute: React.FC<{ children: React.ReactNode, type: 'login' | 'register
   
   if (user) return <Navigate to="/dashboard" replace />;
   
-  // Enforce setup flow
-  if (type === 'login' && requireSetup) return <Navigate to="/register" replace />;
-  if (type === 'register' && !requireSetup) return <Navigate to="/login" replace />;
   
   return <>{children}</>;
 };
@@ -55,8 +51,8 @@ const App: React.FC = () => {
       <ToastProvider>
         <AuthProvider>
       <Routes>
-        <Route path="/login" element={<AuthRoute type="login"><Login /></AuthRoute>} />
-        <Route path="/register" element={<AuthRoute type="register"><Register /></AuthRoute>} />
+        <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
+        <Route path="/register" element={<AuthRoute><Register /></AuthRoute>} />
         <Route 
           path="/dashboard" 
           element={

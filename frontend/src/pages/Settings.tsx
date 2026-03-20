@@ -52,7 +52,7 @@ const Settings: React.FC = () => {
              <SettingsIcon size={14} />
              <span>System Preferences</span>
            </div>
-           <h1 className="text-4xl font-bold text-text-primary tracking-tighter">Authority Settings</h1>
+           <h1 className="text-4xl font-bold text-text-primary tracking-tighter">Account Settings</h1>
         </div>
         <button 
           onClick={logout}

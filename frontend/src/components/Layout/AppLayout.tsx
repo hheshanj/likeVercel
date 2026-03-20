@@ -2,23 +2,21 @@ import React from 'react';
 import Sidebar from './Sidebar';
 import { Search, Bell, HelpCircle, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import TopProgressBar from '../TopProgressBar';
 
-interface LayoutProps {
+interface AppLayoutProps {
   children: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] overflow-hidden w-full">
-      <TopProgressBar />
+    <div className="flex h-screen bg-[#f8fafc] overflow-hidden">
       <Sidebar />
       
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        {/* Global Top Bar */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-30 shrink-0">
+        {/* Top Bar */}
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-30 flex-shrink-0">
           <div className="flex-1 max-w-xl">
             <div className="relative group">
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
@@ -39,14 +37,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <button className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-all">
                 <HelpCircle size={20} />
               </button>
-              <button className="text-sm font-bold text-slate-500 hover:text-slate-900 px-2 transition-colors">Support</button>
+              <button className="text-sm font-bold text-slate-500 hover:text-slate-900 px-2">Support</button>
             </div>
             
-            <div className="h-6 w-px bg-slate-200 mx-1"></div>
+            <div className="h-6 w-px bg-slate-200 mx-2"></div>
             
             <button 
               onClick={() => navigate('/vps/add')}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition-all shadow-md shadow-blue-600/10 flex items-center space-x-2 active:scale-95"
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-black transition-all shadow-md shadow-blue-600/10 flex items-center space-x-2"
             >
               <Plus size={14} />
               <span>Add Node</span>
@@ -54,7 +52,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </header>
 
-        {/* Page Content */}
+        {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto custom-scrollbar relative">
           {children}
         </main>
@@ -63,4 +61,4 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   );
 };
 
-export default Layout;
+export default AppLayout;

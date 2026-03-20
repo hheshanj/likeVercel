@@ -48,6 +48,13 @@
   /* Fonts */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, 'Courier New', monospace;
+
+  /* Kinetic Theme Colors (Light Mode Default) */
+  --kinetic-bg: #f8fafc;
+  --kinetic-panel: #ffffff;
+  --kinetic-blue: #2563eb;
+  --kinetic-blue-muted: rgba(37, 99, 235, 0.05);
+  --kinetic-border: #e2e8f0;
 }
 
 /* Dark Theme Overrides */
@@ -184,18 +191,33 @@ input, select, textarea {
 }
 
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Kinetic Utilities */
+.kinetic-grid {
+  background-size: 40px 40px;
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
 }
-::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+
+.kinetic-gradient-text {
+  background: linear-gradient(135deg, #0f172a 0%, var(--kinetic-blue) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
-::-webkit-scrollbar-thumb {
-  background: var(--bg-tertiary);
-  border-radius: 4px;
+
+@keyframes grid-move {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(40px); }
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+
+.animate-grid {
+  animation: grid-move 20s linear infinite;
+}
+
+.blue-glow {
+  box-shadow: 0 0 20px rgba(37, 99, 235, 0.1);
+}
+
+.blue-border-focus:focus-within {
+  border-color: var(--kinetic-blue);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.05);
 }

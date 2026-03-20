@@ -11,7 +11,6 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  requireSetup: boolean | null;
   login: (token: string, refreshToken: string, userData: User) => void;
   updateUser: (userData: Partial<User>) => void;
   logout: () => void;
@@ -22,16 +21,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [requireSetup, setRequireSetup] = useState<boolean | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        const setupRes = await api.get('/auth/setup');
-        setRequireSetup(setupRes.data.requireSetup);
-      } catch (error) {
-        console.error('Failed to check setup status', error);
-      }
 
       const token = localStorage.getItem('accessToken');
       if (token) {
@@ -67,7 +59,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, requireSetup, login, updateUser, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, updateUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

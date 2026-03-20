@@ -1,169 +1,86 @@
-import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
+import React from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
+  Server, 
+  Key, 
+  HardDrive, 
   Settings, 
-  ChevronLeft, 
-  ChevronRight, 
-  Zap, 
-  Moon, 
-  Sun, 
-  LogOut,
-  KeyRound
+  Plus,
+  Box,
+  User
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const Sidebar: React.FC = () => {
-  const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
-  const [collapsed, setCollapsed] = useState(false);
-  
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const navItems = [
+    { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/dashboard' },
+    { icon: <Server size={20} />, label: 'Nodes', path: '/nodes' },
+    { icon: <Key size={20} />, label: 'SSH Keys', path: '/keys' },
+    { icon: <HardDrive size={20} />, label: 'Volumes', path: '/volumes' },
+    { icon: <Settings size={20} />, label: 'Settings', path: '/settings' },
+  ];
+
   return (
-    <aside 
-      className={`${collapsed ? 'w-16' : 'w-64'} h-full flex-shrink-0 flex flex-col border-r border-border-light bg-bg-primary transition-all duration-300 shadow-2xl z-20 relative`} 
-      id="sidebar"
-    >
-      {/* Brand Header + Collapse Toggle */}
-      <div className={`p-4 pb-4 flex items-center ${collapsed ? 'justify-center' : 'justify-between'} relative overflow-visible`}>
-        <div className={`flex items-center ${collapsed ? 'justify-center' : 'space-x-3 pr-6'} min-w-0`}>
-          <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-600/20 flex-shrink-0">
-            <Zap size={24} className="text-white" fill="currentColor" />
+    <div className="w-64 h-full bg-white border-r border-slate-200 flex flex-col z-40 shrink-0">
+      {/* Brand Header */}
+      <div className="p-8 pb-6">
+        <div className="flex items-center space-x-3 mb-1 cursor-pointer" onClick={() => navigate('/dashboard')}>
+          <div className="p-2 bg-blue-600 rounded-lg text-white">
+            <Box size={20} />
           </div>
-          {!collapsed && (
-            <div className="flex flex-col overflow-hidden">
-              <span className="text-xl font-bold tracking-tighter text-text-primary truncate">likeVercel</span>
-              <span className="text-xs font-bold text-text-muted tracking-[0.1em] -mt-1 ml-1 uppercase opacity-60">v2.0 Beta</span>
-            </div>
-          )}
+          <span className="text-xl font-bold tracking-tighter text-slate-900">Orchestrator</span>
         </div>
-        {/* Collapse toggle — absolutely positioned within header to avoid layout push/overlap */}
-        <button
-          onClick={() => setCollapsed(v => !v)}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-bg-tertiary/50 hover:bg-bg-tertiary text-text-secondary hover:text-text-primary transition-all flex-shrink-0 border border-border-light shadow-sm z-30"
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Infrastructure V2.1</p>
+      </div>
+
+      {/* Action Button */}
+      <div className="px-6 mb-8">
+        <button 
+          onClick={() => navigate('/vps/add')}
+          className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/20 transition-all active:scale-95 flex items-center justify-center space-x-2"
         >
-          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+          <Plus size={16} />
+          <span>New Instance</span>
         </button>
       </div>
 
-      <div className="px-4 py-4">
-        <div className="h-px w-full bg-border-light" />
-      </div>
-
       {/* Navigation */}
-      <nav className="flex-1 px-2 space-y-1 overflow-y-auto custom-scrollbar py-2">
-        {!collapsed && (
-          <p className="px-3 text-xs font-bold text-text-muted uppercase tracking-[0.1em] mb-3 mt-4 opacity-70">System Menu</p>
-        )}
-        
-        <NavLink 
-          to="/dashboard" 
-          className={({ isActive }) => `group flex items-center ${collapsed ? 'justify-center px-2' : 'px-4'} py-2.5 text-sm font-bold rounded-xl transition-all ${
-            isActive 
-            ? 'sidebar-active text-blue-500 bg-blue-500/10' 
-            : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary shadow-sm'
-          }`}
-          title={collapsed ? 'Dashboard' : undefined}
-        >
-          <LayoutDashboard className={`h-4 w-4 flex-shrink-0 ${!collapsed ? 'mr-3' : ''}`} />
-          {!collapsed && <span>Dashboard</span>}
-        </NavLink>
-
-        <NavLink 
-          to="/keys" 
-          className={({ isActive }) => `group flex items-center ${collapsed ? 'justify-center px-2' : 'px-4'} py-2.5 text-sm font-bold rounded-xl transition-all ${
-            isActive 
-            ? 'sidebar-active text-blue-500 bg-blue-500/10' 
-            : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary shadow-sm'
-          }`}
-          title={collapsed ? 'SSH Keys' : undefined}
-        >
-          <KeyRound className={`h-4 w-4 flex-shrink-0 ${!collapsed ? 'mr-3' : ''}`} />
-          {!collapsed && <span>SSH Keys</span>}
-        </NavLink>
-
-        <div className={`${collapsed ? 'py-2' : 'py-6'}`}>
-          {!collapsed && (
-            <p className="px-3 text-xs font-bold text-text-muted uppercase tracking-[0.1em] mb-3 opacity-70">General</p>
-          )}
-          {collapsed && <div className="h-px w-full bg-border-light mb-3" />}
-           
-          <NavLink 
-            to="/settings" 
-            className={({ isActive }) => `group flex items-center ${collapsed ? 'justify-center px-2' : 'px-4'} py-2.5 text-sm font-bold rounded-xl transition-all ${
-              isActive 
-              ? 'sidebar-active text-blue-500 bg-blue-500/10' 
-              : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary shadow-sm'
-            }`}
-            title={collapsed ? 'Settings' : undefined}
+      <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) => 
+              `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${
+                isActive 
+                ? 'bg-blue-50 text-blue-600' 
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              }`
+            }
           >
-            <Settings className={`h-4 w-4 flex-shrink-0 ${!collapsed ? 'mr-3' : ''}`} />
-            {!collapsed && <span>Settings</span>}
+            {item.icon}
+            <span>{item.label}</span>
           </NavLink>
-        </div>
+        ))}
       </nav>
 
-      {/* User Footer Area */}
-      <div className={`p-4 border-t border-border-light bg-bg-secondary/20 ${collapsed ? 'flex flex-col items-center space-y-3' : ''}`}>
-        {!collapsed ? (
-          <>
-            <div className="flex items-center space-x-4 mb-4 group cursor-pointer">
-              <div className="relative flex-shrink-0">
-                 <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center font-bold text-white text-lg shadow-lg group-hover:scale-105 transition-transform">
-                   {user?.name?.charAt(0).toUpperCase() || 'U'}
-                 </div>
-                 <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-emerald-500 rounded-full border-2 border-bg-primary shadow-emerald-500/50 shadow-lg"></div>
-              </div>
-              <div className="overflow-hidden">
-                <p className="text-sm font-bold text-text-primary truncate">{user?.name || 'Authorized User'}</p>
-                <p className="text-[11px] text-text-muted truncate font-bold tracking-tight opacity-70">{user?.email || 'unidentified_identity'}</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={toggleTheme}
-                className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 text-xs font-bold text-text-secondary bg-bg-tertiary/40 hover:bg-bg-tertiary/70 hover:text-text-primary rounded-xl transition-all"
-                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-                <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
-              </button>
-              <button 
-                onClick={logout} 
-                className="flex-1 flex items-center justify-center space-x-2 px-3 py-2.5 text-xs font-bold text-text-secondary bg-bg-tertiary/40 hover:bg-red-500/10 hover:text-red-500 rounded-xl transition-all active:scale-95"
-              >
-                <LogOut size={14} />
-                <span>Logout</span>
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="relative">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center font-bold text-white text-sm shadow-lg">
-                {user?.name?.charAt(0).toUpperCase() || 'U'}
-              </div>
-              <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-emerald-500 rounded-full border-2 border-bg-primary"></div>
-            </div>
-            <button
-              onClick={toggleTheme}
-              className="p-2 text-text-secondary bg-bg-tertiary/40 hover:bg-bg-tertiary/70 hover:text-text-primary rounded-xl transition-all"
-              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-            <button 
-              onClick={logout} 
-              className="p-2 text-text-secondary bg-bg-tertiary/40 hover:bg-red-500/10 hover:text-red-500 rounded-xl transition-all active:scale-95"
-              title="Logout"
-            >
-              <LogOut size={16} />
-            </button>
-          </>
-        )}
+      {/* User Support & Profile */}
+      <div className="p-4 mt-auto border-t border-slate-100 bg-slate-50/50">
+        <div className="flex items-center space-x-3 p-3 bg-white border border-slate-200 rounded-2xl shadow-sm">
+          <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600">
+            <User size={18} />
+          </div>
+          <div className="flex-1 min-w-0 text-left">
+            <p className="text-xs font-bold text-slate-900 truncate">{user?.name || 'Admin'}</p>
+            <p className="text-[10px] text-slate-400 font-medium">Admin Access</p>
+          </div>
+        </div>
       </div>
-    </aside>
+    </div>
   );
 };
 
