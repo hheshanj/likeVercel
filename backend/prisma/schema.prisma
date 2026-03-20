@@ -46,6 +46,7 @@ model VpsProfile {
   encryptedCredentials String // AES-256-GCM encrypted JSON
   iv                   String // Initialization vector
   authTag              String // GCM auth tag
+  region               String?
   lastConnectedAt      DateTime?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt

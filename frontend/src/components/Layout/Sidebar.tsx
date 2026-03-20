@@ -2,9 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  Server, 
   Key, 
-  HardDrive, 
   Settings, 
   Plus,
   Box,
@@ -18,9 +16,7 @@ const Sidebar: React.FC = () => {
 
   const navItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/dashboard' },
-    { icon: <Server size={20} />, label: 'Nodes', path: '/nodes' },
     { icon: <Key size={20} />, label: 'SSH Keys', path: '/keys' },
-    { icon: <HardDrive size={20} />, label: 'Volumes', path: '/volumes' },
     { icon: <Settings size={20} />, label: 'Settings', path: '/settings' },
   ];
 
@@ -32,7 +28,7 @@ const Sidebar: React.FC = () => {
           <div className="p-2 bg-blue-600 rounded-lg text-white">
             <Box size={20} />
           </div>
-          <span className="text-xl font-bold tracking-tighter text-slate-900">Orchestrator</span>
+          <span className="text-xl font-bold tracking-tighter text-slate-900">likeVercel</span>
         </div>
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Infrastructure V2.1</p>
       </div>

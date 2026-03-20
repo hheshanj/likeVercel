@@ -3,18 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Server,
   Zap,
-  PowerOff,
-  Search,
   LayoutGrid,
   List,
-  MoreVertical,
   Activity,
-  Globe,
   Loader2,
   Trash2,
-  ShieldCheck,
   X,
-  RefreshCw
+  Power,
+  PowerOff
 } from 'lucide-react';
 import api from '../utils/api';
 import ConfirmModal from '../components/ConfirmModal';
@@ -28,6 +24,7 @@ interface VPSProfile {
   port: number;
   authType: string;
   isConnected: boolean;
+  region?: string;
 }
 
 interface ServerSpecs {
@@ -36,6 +33,7 @@ interface ServerSpecs {
   ram: string;
   disk: string;
   cpuLoad?: number;
+  region?: string;
 }
 
 const Dashboard: React.FC = () => {
@@ -46,7 +44,6 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState('');
   const [connecting, setConnecting] = useState<string | null>(null);
   const [specs, setSpecs] = useState<Record<string, ServerSpecs>>({});
-  const [fetchingSpecs, setFetchingSpecs] = useState<Record<string, boolean>>({});
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const profilesRef = useRef<VPSProfile[]>([]);
@@ -75,16 +72,48 @@ const Dashboard: React.FC = () => {
   };
 
   const fetchSpecs = async (id: string) => {
-    setFetchingSpecs(prev => ({ ...prev, [id]: true }));
     try {
-      const { data } = await api.get(`/vps/${id}/specs`);
-      // Simulating some dynamic data for the demo looks
-      const cpuLoad = Math.floor(Math.random() * 60) + 10;
-      setSpecs(prev => ({ ...prev, [id]: { ...data, cpuLoad } }));
+      // Get static hardware specs
+      const { data: specsData } = await api.get(`/vps/${id}/specs`);
+      
+      // Get real-time usage (CPU/RAM %)
+      try {
+        const { data: usageData } = await api.get(`/vps/${id}/usage`);
+        setSpecs(prev => ({ 
+          ...prev, 
+          [id]: { ...specsData, cpuLoad: usageData.cpu } 
+        }));
+      } catch (usageErr) {
+        // Fallback if usage fails but specs worked
+        setSpecs(prev => ({ ...prev, [id]: { ...specsData, cpuLoad: 0 } }));
+      }
     } catch (err) {
       console.error('Failed to fetch node specs', err);
+    }
+  };
+
+  const handleConnect = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setConnecting(id);
+    try {
+      await api.post(`/vps/${id}/connect`);
+      showToast('Server connected successfully', 'success');
+      fetchProfiles();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Connection failed');
     } finally {
-      setFetchingSpecs(prev => ({ ...prev, [id]: false }));
+      setConnecting(null);
+    }
+  };
+
+  const handleDisconnect = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await api.post(`/vps/${id}/disconnect`);
+      showToast('Server disconnected', 'info');
+      fetchProfiles();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Disconnection failed');
     }
   };
 
@@ -182,11 +211,12 @@ const Dashboard: React.FC = () => {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/50">
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Instance Name</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Region</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">IP Address</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">CPU Load</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Instance Name</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Region</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">IP Address</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">CPU Load</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -217,18 +247,38 @@ const Dashboard: React.FC = () => {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-5 text-sm font-bold text-slate-500 tracking-tight">US-EAST-1</td>
+                    <td className="px-6 py-5 text-sm font-bold text-slate-500 tracking-tight">
+                      {vps.region || (vps.isConnected ? (specs[vps.id]?.region || 'DETECTING...') : '—')}
+                    </td>
                     <td className="px-6 py-5 text-sm font-mono text-slate-400">{vps.host}</td>
                     <td className="px-6 py-5 text-right w-48">
                       <div className="flex items-center justify-end space-x-3">
                         <div className="flex-1 max-w-[100px] h-1.5 bg-slate-100 rounded-full overflow-hidden">
                           <div 
                             className={`h-full rounded-full transition-all duration-1000 ${vps.isConnected ? 'bg-blue-600' : 'bg-slate-300'}`}
-                            style={{ width: `${vps.isConnected ? (specs[vps.id]?.cpuLoad || 42) : 0}%` }}
+                            style={{ width: `${vps.isConnected ? (specs[vps.id]?.cpuLoad || 0) : 0}%` }}
                           />
                         </div>
-                        <span className="text-xs font-black text-slate-900 w-8">{vps.isConnected ? `${specs[vps.id]?.cpuLoad || 42}%` : '0%'}</span>
+                        <span className="text-xs font-bold text-slate-900 w-8">{vps.isConnected ? `${specs[vps.id]?.cpuLoad || 0}%` : '0%'}</span>
                       </div>
+                    </td>
+                    <td className="px-6 py-5 text-right">
+                      {!vps.isConnected ? (
+                        <button 
+                          onClick={(e) => handleConnect(vps.id, e)}
+                          disabled={connecting === vps.id}
+                          className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black rounded-lg transition-all shadow-md shadow-blue-600/10 active:scale-95 disabled:opacity-50 uppercase tracking-widest"
+                        >
+                          {connecting === vps.id ? <Loader2 size={12} className="animate-spin" /> : "Connect"}
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={(e) => handleDisconnect(vps.id, e)}
+                          className="px-4 py-1.5 bg-slate-100 hover:bg-red-50 hover:text-red-500 text-slate-500 text-[10px] font-black rounded-lg transition-all active:scale-95 uppercase tracking-widest"
+                        >
+                          Disconnect
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -272,12 +322,30 @@ const Dashboard: React.FC = () => {
                       <div className={`w-1.5 h-1.5 rounded-full ${vps.isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
                       <span className="text-[10px] font-black uppercase tracking-widest">{vps.isConnected ? 'Live' : 'Offline'}</span>
                     </div>
-                    {vps.isConnected && (
-                       <div className="flex items-center space-x-2">
-                         <Activity size={14} className="text-blue-600" />
-                         <span className="text-xs font-black text-slate-900">{specs[vps.id]?.cpuLoad || 42}%</span>
-                       </div>
-                    )}
+                    <div className="flex items-center space-x-2">
+                       {vps.isConnected && (
+                         <div className="flex items-center space-x-1.5 mr-2">
+                           <Activity size={14} className="text-blue-600" />
+                           <span className="text-xs font-bold text-slate-900">{specs[vps.id]?.cpuLoad || 0}%</span>
+                         </div>
+                       )}
+                       {!vps.isConnected ? (
+                          <button 
+                            onClick={(e) => handleConnect(vps.id, e)}
+                            disabled={connecting === vps.id}
+                            className="p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+                          >
+                             {connecting === vps.id ? <Loader2 size={16} className="animate-spin" /> : <Power size={16} />}
+                          </button>
+                       ) : (
+                          <button 
+                            onClick={(e) => handleDisconnect(vps.id, e)}
+                            className="p-2 bg-slate-100 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all active:scale-95"
+                          >
+                             <PowerOff size={16} />
+                          </button>
+                       )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -286,31 +354,6 @@ const Dashboard: React.FC = () => {
         )}
       </section>
 
-      {/* Floating System Health (Simplified for layout) */}
-      <div className="fixed bottom-8 right-8 w-80 bg-white border border-slate-200 rounded-[24px] shadow-2xl p-6 z-50 animate-in slide-in-from-bottom-8 duration-500">
-         <div className="flex items-center justify-between mb-6">
-            <h3 className="text-sm font-black text-slate-900 tracking-tight">System Health</h3>
-            <div className="w-2 h-2 bg-emerald-500 rounded-full" />
-         </div>
-         <div className="space-y-4 mb-6">
-            <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-               <span>Network Throughput</span>
-               <span className="text-slate-900">4.2 GB/s</span>
-            </div>
-            <div className="flex items-end space-x-1 h-12">
-               {[40, 60, 45, 70, 85, 90, 65, 80, 50, 95].map((val, i) => (
-                 <div 
-                   key={i} 
-                   className={`flex-1 rounded-sm transition-all duration-500 ${i === 9 ? 'bg-blue-600' : 'bg-blue-100'}`}
-                   style={{ height: `${val}%` }}
-                 />
-               ))}
-            </div>
-         </div>
-         <button className="w-full py-3 bg-slate-900 hover:bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95">
-            View Global Map
-         </button>
-      </div>
 
       {confirmDelete && (
         <ConfirmModal

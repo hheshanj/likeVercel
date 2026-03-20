@@ -42,8 +42,81 @@ router.get('/:id/processes', async (req: AuthRequest, res: Response): Promise<vo
       cpu: p.monit?.cpu || 0,
       memory: p.monit?.memory || 0,
       status: p.pm2_env?.status || 'unknown',
-      pm_id: p.pm_id
+      pm_id: p.pm_id,
+      type: 'pm2'
     }));
+
+    // Scan for listening TCP ports (raw processes not in PM2)
+    let unmanagedPorts: any[] = [];
+    try {
+      // Try ss first
+      let ssOutput = '';
+      try {
+        ssOutput = await sshManager.executeCommand(vpsId, "ss -lntp | grep 'LISTEN'");
+      } catch {
+        // Fallback to lsof if ss fails
+        ssOutput = await sshManager.executeCommand(vpsId, "lsof -iTCP -sTCP:LISTEN -P -n | grep 'LISTEN'");
+      }
+
+      const lines = ssOutput.split('\n').filter(l => l.trim());
+      const managedPorts = new Set(deployments.map(d => d.port));
+      const pm2Ports = new Set();
+      pm2Processes.forEach(p => {
+        if (p.pm2_env?.PORT) pm2Ports.add(parseInt(p.pm2_env.PORT));
+      });
+
+      for (const line of lines) {
+        // ss/lsof output parsing
+        // We look for :PORT followed by space, and optionally users:(("name",pid=123...
+        // Format for ss:  0.0.0.0:80 ... users:(("nginx",pid=1024,fd=6))
+        // Format for lsof: node 1234 user 18u IPv4 0x... 0t0 TCP *:80 (LISTEN)
+        
+        let port: number | null = null;
+        let name = 'raw-process';
+        let pid: string | null = null;
+
+        if (line.includes('users:')) {
+          // ss format
+          const portMatch = line.match(/:(\d+)\s+/);
+          if (portMatch) port = parseInt(portMatch[1]);
+          
+          const userMatch = line.match(/users:\(\("([^"]+)",pid=(\d+)/);
+          if (userMatch) {
+            name = userMatch[1];
+            pid = userMatch[2];
+          }
+        } else {
+          // lsof or alternate ss format
+          const parts = line.split(/\s+/);
+          // For lsof, name is index 0, port is in the address part (usually index 8 or 9)
+          const addrPart = parts.find(p => p.includes(':') || p.includes('*'));
+          if (addrPart) {
+            const portStr = addrPart.split(':').pop() || addrPart.split('*').pop();
+            if (portStr) port = parseInt(portStr);
+          }
+          name = parts[0];
+          pid = parts[1];
+        }
+        
+        if (port && !isNaN(port) && !managedPorts.has(port) && !pm2Ports.has(port)) {
+          if ([22, 25, 53, 111, 2049].includes(port)) continue;
+
+          unmanagedPorts.push({
+            processName: `${name}:${port}`,
+            cpu: 0,
+            memory: 0,
+            status: 'running', // Definitely running if listening
+            port: port,
+            pid: pid,
+            type: 'port'
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('[Process] Robust port scan failed:', err);
+    }
+
+    const allUnmanaged = [...unmanagedPm2Processes, ...unmanagedPorts];
 
     if (pm2Processes.length > 0) {
       const processesWithStatus = deployments.map((d: any) => {
@@ -57,13 +130,13 @@ router.get('/:id/processes', async (req: AuthRequest, res: Response): Promise<vo
         };
       });
 
-      res.json({ processes: processesWithStatus, unmanagedProcesses: unmanagedPm2Processes });
+      res.json({ processes: processesWithStatus, unmanagedProcesses: allUnmanaged });
     } else {
       const processesWithUrls = deployments.map((d: any) => ({
         ...d,
         url: `http://${vps?.host}:${d.port}`,
       }));
-      res.json({ processes: processesWithUrls, unmanagedProcesses: unmanagedPm2Processes });
+      res.json({ processes: processesWithUrls, unmanagedProcesses: allUnmanaged });
     }
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -284,6 +357,78 @@ router.get('/:id/processes/:deploymentId/logs', async (req: AuthRequest, res: Re
     );
 
     res.json({ logs });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/vps/:id/processes/adopt — take control of an unmanaged workload
+router.post('/:id/processes/adopt', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const vpsId = await verifyVps(req, res);
+    if (!vpsId) return;
+
+    const { pm_id, processName, projectPath, port, type, pid } = req.body;
+    
+    // Check if it's already managed
+    const existing = await prisma.deployment.findFirst({
+      where: { vpsId, processName },
+    });
+    if (existing) {
+      res.status(400).json({ error: 'Process is already managed' });
+      return;
+    }
+
+    let finalPath = projectPath;
+    let finalPort = port ? parseInt(port) : 80;
+    let finalName = processName;
+
+    if (type === 'port' && pid) {
+      // Try to discover CWD using pwdx
+      try {
+        const pwdxOut = await sshManager.executeCommand(vpsId, `pwdx ${pid}`);
+        // Output: "1024: /home/user/app"
+        const pathPart = pwdxOut.split(': ')[1];
+        if (pathPart && !finalPath) finalPath = pathPart.trim();
+      } catch (err) {
+        console.warn(`[Process] pwdx failed for pid ${pid}:`, err);
+      }
+      if (!finalPath) finalPath = '/var/www';
+    } else if (pm_id) {
+      // PM2 adoption logic
+      try {
+        const pm2Desc = await sshManager.executeCommand(vpsId, `pm2 describe ${pm_id} --format json`);
+        const details = JSON.parse(pm2Desc);
+        if (details && details.length > 0) {
+          const proc = details[0];
+          if (!finalPath) finalPath = proc.pm2_env?.pm_cwd || '/var/www';
+          if (!port && proc.pm2_env?.PORT) finalPort = parseInt(proc.pm2_env.PORT);
+        }
+      } catch (err) {
+        console.warn(`[Process] PM2 describe failed for adoption: ${err}`);
+      }
+    } else {
+      res.status(400).json({ error: 'pm_id or pid/port required' });
+      return;
+    }
+
+    // Save deployment record
+    // We assume 'running' because it was detected as listening
+    const deployment = await prisma.deployment.create({
+      data: {
+        vpsId,
+        projectPath: finalPath,
+        processName: finalName,
+        port: finalPort || 80,
+        status: 'running',
+        startedAt: new Date(),
+      },
+    });
+
+    res.status(201).json({
+      message: 'Workload adopted successfully',
+      deployment,
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

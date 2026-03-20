@@ -56,6 +56,7 @@ const VpsDetail: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [profile, setProfile] = useState<VpsProfile | null>(null);
+  const [specs, setSpecs] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
   const queryParams = new URLSearchParams(location.search);
@@ -69,10 +70,19 @@ const VpsDetail: React.FC = () => {
       try {
         const { data } = await api.get(`/vps/${id}`);
         setProfile(data.profile);
+        if (data.profile.isConnected) fetchSpecs();
       } catch (err) {
         navigate('/dashboard');
       } finally {
         setLoading(false);
+      }
+    };
+    const fetchSpecs = async () => {
+      try {
+        const { data } = await api.get(`/vps/${id}/specs`);
+        setSpecs(data);
+      } catch (err) {
+        console.error('Failed to fetch specs', err);
       }
     };
     if (id) fetchProfile();
@@ -125,7 +135,10 @@ const VpsDetail: React.FC = () => {
                   </span>
                 )}
               </div>
-              <p className="mt-1 text-text-muted font-mono text-xs font-bold tracking-tight">{profile.username}@{profile.host}:{profile.port}</p>
+              <p className="mt-1 text-text-muted font-mono text-xs font-bold tracking-tight">
+                {profile.username}@{profile.host}:{profile.port} 
+                {specs?.region && <span className="ml-3 text-blue-500 opacity-80 uppercase tracking-widest">• {specs.region}</span>}
+              </p>
             </div>
           </div>
           

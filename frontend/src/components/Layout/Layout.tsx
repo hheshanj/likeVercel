@@ -1,7 +1,6 @@
 import React from 'react';
 import Sidebar from './Sidebar';
-import { Search, Bell, HelpCircle, Plus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Search, Bell, HelpCircle } from 'lucide-react';
 import TopProgressBar from '../TopProgressBar';
 
 interface LayoutProps {
@@ -9,7 +8,6 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const navigate = useNavigate();
 
   return (
     <div className="flex h-screen bg-[#f8fafc] overflow-hidden w-full">
@@ -41,16 +39,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </button>
               <button className="text-sm font-bold text-slate-500 hover:text-slate-900 px-2 transition-colors">Support</button>
             </div>
-            
-            <div className="h-6 w-px bg-slate-200 mx-1"></div>
-            
-            <button 
-              onClick={() => navigate('/vps/add')}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition-all shadow-md shadow-blue-600/10 flex items-center space-x-2 active:scale-95"
-            >
-              <Plus size={14} />
-              <span>Add Node</span>
-            </button>
           </div>
         </header>
 

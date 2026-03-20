@@ -46,7 +46,10 @@ interface UnmanagedProcess {
   status: string;
   cpu: number;
   memory: number;
-  pm_id: number;
+  pm_id?: number;
+  port?: number;
+  pid?: number;
+  type?: 'pm2' | 'port';
 }
 
 interface ProcessManagerProps {
@@ -199,6 +202,26 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
     }
   };
 
+  const handleAdopt = async (proc: UnmanagedProcess) => {
+    const actionKey = proc.pm_id ? `adopt-${proc.pm_id}` : `adopt-${proc.port}`;
+    setActionLoading(actionKey);
+    try {
+      await api.post(`/vps/${vpsId}/processes/adopt`, {
+        pm_id: proc.pm_id,
+        processName: proc.processName,
+        port: proc.port,
+        pid: proc.pid,
+        type: proc.type,
+      });
+      showToast('Process adopted successfully', 'success');
+      fetchProcesses();
+    } catch (err: any) {
+      showToast(err.response?.data?.error || 'Adoption failed', 'error');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   // Auto-scroll log modal to bottom whenever logs update (#20)
   useEffect(() => {
     if (logBodyRef.current && logModal?.logs) {
@@ -330,18 +353,17 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
             <Loader2 size={32} className="text-blue-500 animate-spin mb-4" />
             <span className="text-text-muted font-bold uppercase tracking-widest text-[10px]">Scanning Workloads...</span>
           </div>
-        ) : filteredDeployments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 px-8 border border-dashed border-border-light rounded-[32px] bg-bg-secondary/10">
-            <div className="p-6 bg-bg-secondary rounded-full mb-6 border border-border-light">
-              <Rocket size={48} className="text-text-muted/30" />
-            </div>
-            <h3 className="text-lg font-bold text-text-primary mb-2 tracking-tight">No Active Deploys</h3>
-            <p className="text-text-muted text-center max-w-sm mb-10 text-xs font-medium leading-relaxed">Initialize application clusters on target host to begin orchestration.</p>
-            <button onClick={() => setShowDeploy(true)} className="px-10 py-4 bg-bg-tertiary hover:bg-bg-tertiary/70 text-text-primary font-bold text-xs rounded-2xl transition-all border border-border-light shadow-xl">
-              Initialize Protocol
-            </button>
-          </div>
         ) : (
+          <>
+            {filteredDeployments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 px-8 border border-dashed border-border-light rounded-[32px] bg-bg-secondary/10">
+                <div className="p-6 bg-bg-secondary rounded-full mb-6 border border-border-light">
+                  <Rocket size={48} className="text-text-muted/30" />
+                </div>
+                <h3 className="text-lg font-bold text-text-primary mb-2 tracking-tight">No Active Deploys</h3>
+                <p className="text-text-muted text-center max-w-sm mb-10 text-xs font-medium leading-relaxed">Initialize application clusters on target host to begin orchestration.</p>
+              </div>
+            ) : (
           <div className="grid grid-cols-1 gap-4">
             {filteredDeployments.map((dep) => {
               const status = dep.actualStatus || dep.status;
@@ -439,71 +461,76 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
               );
             })}
 
-            {/* Unmanaged Processes */}
-            {unmanaged.length > 0 && (
-              <>
-                <div className="flex items-center space-x-3 mt-10 mb-4 px-1">
-                  <Activity className="text-amber-500" size={18} />
-                  <h3 className="text-[11px] font-bold text-text-muted tracking-tight uppercase tracking-widest">External Workloads detected</h3>
-                </div>
-                {unmanaged.map((proc) => (
-                  <div key={proc.pm_id} className="group glass-effect rounded-[24px] border border-border-light bg-amber-500/[0.02] hover:border-amber-500/20 transition-all duration-300 overflow-hidden shadow-xl">
-                    <div className="p-5 flex flex-col xl:flex-row xl:items-center justify-between gap-5">
-                      <div className="flex items-center space-x-4">
-                        <div className="p-4 rounded-2xl bg-amber-500/5 transition-all shadow-inner">
-                          <Activity size={24} className="text-amber-500" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center space-x-3 mb-1.5">
-                            <h5 className="font-bold text-text-primary tracking-tight text-[13px]">{proc.processName}</h5>
-                            <div className="px-2.5 py-0.5 rounded-full border bg-amber-500/10 border-amber-500/20 text-amber-500 text-[9px] font-bold uppercase tracking-widest">
-                               UNMANAGED
-                            </div>
-                          </div>
-                          <p className="text-[10px] font-medium text-text-muted tracking-wide flex items-center space-x-2">
-                             <span className={`h-1.5 w-1.5 rounded-full ${proc.status === 'online' ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                             <span>Status: {proc.status}</span>
-                             <span className="opacity-30">|</span>
-                             <span>ID: {proc.pm_id}</span>
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between xl:justify-end gap-10 pt-4 xl:pt-0 border-t xl:border-t-0 border-border-light">
-                        <div className="flex items-center space-x-6">
-                           <div className="text-center">
-                              <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest mb-1">CPU Usage</p>
-                              <div className="flex items-center justify-center space-x-2 text-amber-500 font-bold text-[12px]">
-                                 <Cpu size={14} />
-                                 <span>{proc.cpu.toFixed(1)}%</span>
-                              </div>
-                           </div>
-                           <div className="text-center">
-                              <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest mb-1">Memory Usage</p>
-                              <div className="flex items-center justify-center space-x-2 text-amber-500 font-bold text-[12px]">
-                                 <HardDrive size={14} />
-                                 <span>{formatMemory(proc.memory)}</span>
-                              </div>
-                           </div>
-                        </div>
-                        
-                        <button 
-                         onClick={() => {
-                            setShowDeploy(true);
-                            setDeployForm(prev => ({ ...prev, projectPath: '', command: 'npm start', processName: proc.processName }));
-                          }}
-                          className="px-6 py-2.5 bg-bg-tertiary hover:bg-bg-tertiary/70 text-text-muted hover:text-text-primary font-bold text-[10px] rounded-xl transition-all border border-border-light uppercase tracking-widest"
-                        >
-                          Adopt Process
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </>
             )}
           </div>
-        )}
+
+          {/* Unmanaged Processes - Outside the managed deployments check */}
+          {unmanaged.filter(p => 
+            p.processName.toLowerCase().includes(searchTerm.toLowerCase())
+          ).length > 0 && (
+            <>
+              <div className="flex items-center space-x-3 mt-10 mb-4 px-1">
+                <Activity className="text-amber-500" size={18} />
+                <h3 className="text-[11px] font-bold text-text-muted tracking-tight uppercase tracking-widest">External Workloads detected</h3>
+              </div>
+              {unmanaged.filter(p => 
+                p.processName.toLowerCase().includes(searchTerm.toLowerCase())
+              ).map((proc) => (
+                <div key={proc.pm_id || `port-${proc.port}`} className="group glass-effect rounded-[24px] border border-border-light bg-amber-500/[0.02] hover:border-amber-500/20 transition-all duration-300 overflow-hidden shadow-xl">
+                  <div className="p-5 flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+                    <div className="flex items-center space-x-4">
+                      <div className="p-4 rounded-2xl bg-amber-500/5 transition-all shadow-inner">
+                        <Activity size={24} className="text-amber-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center space-x-3 mb-1.5">
+                          <h5 className="font-bold text-text-primary tracking-tight text-[13px]">{proc.processName}</h5>
+                          <div className="px-2.5 py-0.5 rounded-full border bg-amber-500/10 border-amber-500/20 text-amber-500 text-[9px] font-bold uppercase tracking-widest">
+                             {proc.type === 'port' ? 'RAW PORT' : 'UNMANAGED'}
+                          </div>
+                        </div>
+                        <p className="text-[10px] font-medium text-text-muted tracking-wide flex items-center space-x-2">
+                           <span className={`h-1.5 w-1.5 rounded-full ${proc.status === 'online' || proc.status === 'running' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                           <span>Status: {proc.status}</span>
+                           <span className="opacity-30">|</span>
+                           <span>{proc.pm_id ? `PM2 ID: ${proc.pm_id}` : `PORT: ${proc.port}`}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between xl:justify-end gap-10 pt-4 xl:pt-0 border-t xl:border-t-0 border-border-light">
+                      <div className="flex items-center space-x-6">
+                         <div className="text-center">
+                            <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest mb-1">CPU Usage</p>
+                            <div className="flex items-center justify-center space-x-2 text-amber-500 font-bold text-[12px]">
+                               <Cpu size={14} />
+                               <span>{proc.cpu.toFixed(1)}%</span>
+                            </div>
+                         </div>
+                         <div className="text-center">
+                            <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest mb-1">Memory Usage</p>
+                            <div className="flex items-center justify-center space-x-2 text-amber-500 font-bold text-[12px]">
+                               <HardDrive size={14} />
+                               <span>{formatMemory(proc.memory)}</span>
+                            </div>
+                         </div>
+                      </div>
+                      
+                      <button 
+                       onClick={() => handleAdopt(proc)}
+                       disabled={actionLoading === (proc.pm_id ? `adopt-${proc.pm_id}` : `adopt-${proc.port}`)}
+                       className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] rounded-xl transition-all border border-blue-600 shadow-xl shadow-blue-600/10 uppercase tracking-widest disabled:opacity-50 flex items-center space-x-2"
+                      >
+                        {actionLoading === (proc.pm_id ? `adopt-${proc.pm_id}` : `adopt-${proc.port}`) ? <Loader2 size={14} className="animate-spin" /> : <span>Take Control</span>}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </>
+      )}
       </div>
 
       {/* Log Modal */}

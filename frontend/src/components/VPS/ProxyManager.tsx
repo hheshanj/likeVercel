@@ -189,29 +189,33 @@ const ProxyManager: React.FC<ProxyManagerProps> = ({ vpsId }) => {
       )}
 
       {showForm && (
-        <form onSubmit={handleCreate} className="glass-effect p-8 rounded-[32px] border border-blue-500/20 space-y-8 animate-in slide-in-from-top-4 duration-300 shadow-2xl overflow-hidden relative">
-           <div className="flex items-center justify-between">
+        <form onSubmit={handleCreate} className="bg-bg-secondary rounded-[32px] border border-blue-500/30 p-8 shadow-2xl space-y-8 animate-in slide-in-from-top-4 duration-300 relative z-20">
+           <div className="flex items-center justify-between border-b border-border-light pb-6 -mx-2">
               <div className="flex items-center space-x-3">
-                 <Zap className="text-blue-500" size={24} />
-                 <h4 className="text-sm font-bold text-text-primary tracking-tight">Add route definition</h4>
+                 <div className="p-2 bg-blue-600 rounded-xl shadow-lg shadow-blue-600/20">
+                    <Zap className="text-white" size={18} />
+                 </div>
+                 <h4 className="text-base font-bold text-text-primary tracking-tight">New Routing Rule</h4>
               </div>
               <button 
                 type="button" 
                 onClick={() => setShowForm(false)} 
-                className="p-2 text-text-muted hover:text-text-primary transition-colors"
+                className="p-2 text-text-muted hover:text-text-primary hover:bg-bg-primary rounded-xl transition-all"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
            </div>
 
-           <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-end">
-              <div className="md:col-span-2">
-                 <label className="block text-[10px] font-bold text-text-muted mb-3 uppercase tracking-widest text-left">Domain</label>
-                 <div className="relative">
-                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
+           <div className="grid grid-cols-1 md:grid-cols-7 gap-6 items-end">
+              <div className="md:col-span-3">
+                 <label className="block text-[10px] font-bold text-text-muted mb-3 uppercase tracking-widest pl-1">Target Domain</label>
+                 <div className="relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 p-1.5 bg-bg-tertiary/50 rounded-lg group-focus-within:bg-blue-600 group-focus-within:text-white transition-all">
+                       <Globe size={14} />
+                    </div>
                     <input
-                      className="w-full bg-bg-primary border border-border-light rounded-2xl pl-12 pr-4 py-3 text-xs text-text-primary outline-none focus:border-blue-500 transition-all font-mono shadow-inner"
-                      placeholder="e.g. cloud.domain.com"
+                      className="w-full bg-bg-primary border border-border-light rounded-2xl pl-14 pr-4 py-4 text-sm text-text-primary outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-mono shadow-sm"
+                      placeholder="cloud.example.com"
                       value={form.domain}
                       onChange={(e) => setForm({ ...form, domain: e.target.value })}
                       required
@@ -219,16 +223,18 @@ const ProxyManager: React.FC<ProxyManagerProps> = ({ vpsId }) => {
                  </div>
               </div>
               
-              <div className="flex justify-center pb-3 hidden md:block opacity-20 text-text-muted">
-                 <ArrowRight size={24} />
+              <div className="hidden md:flex justify-center pb-5 text-text-muted opacity-40">
+                 <ArrowRight size={20} />
               </div>
 
-              <div className="md:col-span-2">
-                 <label className="block text-[10px] font-bold text-text-muted mb-3 uppercase tracking-widest text-left">Port</label>
-                 <div className="relative">
-                    <Zap className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
+              <div className="md:col-span-3">
+                 <label className="block text-[10px] font-bold text-text-muted mb-3 uppercase tracking-widest pl-1">Internal Port</label>
+                 <div className="relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 p-1.5 bg-bg-tertiary/50 rounded-lg group-focus-within:bg-blue-600 group-focus-within:text-white transition-all">
+                       <Zap size={14} />
+                    </div>
                     <input
-                      className="w-full bg-bg-primary border border-border-light rounded-2xl pl-12 pr-4 py-3 text-xs text-text-primary outline-none focus:border-blue-500 transition-all font-mono shadow-inner"
+                      className="w-full bg-bg-primary border border-border-light rounded-2xl pl-14 pr-4 py-4 text-sm text-text-primary outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-mono shadow-sm"
                       type="number"
                       placeholder="3000"
                       value={form.port}
@@ -239,11 +245,11 @@ const ProxyManager: React.FC<ProxyManagerProps> = ({ vpsId }) => {
               </div>
            </div>
 
-           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pt-2">
+           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pt-4 border-t border-border-light -mx-2 px-2">
               <label 
-                className={`cursor-pointer group flex items-center space-x-4 p-4 rounded-2xl border transition-all ${
+                className={`cursor-pointer group flex items-center space-x-4 p-4 pr-10 rounded-2xl border transition-all ${
                   form.ssl 
-                  ? 'bg-blue-600/10 border-blue-500/40 text-blue-500' 
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600' 
                   : 'bg-bg-primary border-border-light text-text-muted hover:border-text-secondary'
                 }`}
               >
@@ -253,26 +259,26 @@ const ProxyManager: React.FC<ProxyManagerProps> = ({ vpsId }) => {
                   onChange={(e) => setForm({ ...form, ssl: e.target.checked })}
                   className="hidden"
                 />
-                <div className={`p-2 rounded-xl transition-all shadow-lg ${form.ssl ? 'bg-blue-600 text-white' : 'bg-bg-tertiary'}`}>
-                  <Lock size={16} />
+                <div className={`p-2.5 rounded-xl transition-all shadow-lg ${form.ssl ? 'bg-emerald-500 text-white' : 'bg-bg-tertiary'}`}>
+                  {form.ssl ? <ShieldCheck size={18} /> : <Lock size={18} />}
                 </div>
                 <div>
-                   <span className="block font-bold text-[11px] tracking-tight">Active TLS encryption</span>
-                   <span className="block text-[8px] font-bold uppercase tracking-tight opacity-60">Let's Encrypt CA</span>
+                   <span className="block font-bold text-[11px] tracking-tight">Auto SSL (Let's Encrypt)</span>
+                   <span className="block text-[8px] font-bold uppercase tracking-tight opacity-60">Automatic provisioning</span>
                 </div>
               </label>
 
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                  <button 
                    type="button" 
-                   className="px-6 py-2 text-text-muted hover:text-text-primary font-bold text-xs transition-colors" 
+                   className="px-6 py-3 text-text-muted hover:text-red-500 font-bold text-xs transition-colors rounded-xl hover:bg-red-500/5" 
                    onClick={() => setShowForm(false)}
                  >
-                    Discard
+                    Discard Changes
                  </button>
                  <button 
                    type="submit" 
-                   className="px-10 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl text-xs transition-all active:scale-95 disabled:opacity-50"
+                   className="px-10 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-600/20 text-xs transition-all active:scale-95 disabled:opacity-50 min-w-[180px]"
                    disabled={creating || !form.domain || !form.port}
                  >
                     {creating ? <Loader2 size={20} className="animate-spin" /> : 'Map Active Route'}
@@ -280,10 +286,13 @@ const ProxyManager: React.FC<ProxyManagerProps> = ({ vpsId }) => {
               </div>
            </div>
 
-           <div className="flex items-center space-x-3 px-5 py-3 bg-bg-primary border border-border-light rounded-xl">
-              <HelpCircle size={18} className="text-text-muted/30" />
-              <p className="text-[9px] text-text-muted leading-relaxed tracking-tight font-bold">
-                Pre-Validation: CNAME or A-Record must resolve to current host gateway.
+           <div className="flex items-center space-x-3 px-5 py-4 bg-bg-primary/50 border border-border-light border-dashed rounded-2xl">
+              <div className="p-1.5 bg-blue-500/10 rounded-lg">
+                <HelpCircle size={16} className="text-blue-500" />
+              </div>
+              <p className="text-[10px] text-text-muted leading-relaxed tracking-tight font-bold">
+                <span className="text-text-primary mr-1">Pre-Validation:</span>
+                DNS CNAME or A-Record must resolve to this host before SSL activation.
               </p>
            </div>
         </form>
@@ -303,12 +312,6 @@ const ProxyManager: React.FC<ProxyManagerProps> = ({ vpsId }) => {
             </div>
             <h3 className="text-lg font-bold text-text-primary mb-3 tracking-tight">No connectors defined</h3>
             <p className="text-text-muted text-center max-w-sm mb-12 text-xs font-bold leading-relaxed">Map custom domains to internal host ports with automatic TLS protocols.</p>
-            <button 
-               onClick={() => setShowForm(true)} 
-               className="px-10 py-4 bg-bg-tertiary hover:bg-bg-tertiary/70 text-text-primary font-bold text-xs rounded-2xl transition-all border border-border-light shadow-2xl"
-            >
-              Gateway initialization
-            </button>
           </div>
         ) : (
           configs.map((cfg) => (

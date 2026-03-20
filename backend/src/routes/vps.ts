@@ -27,6 +27,7 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
         port: true,
         username: true,
         authType: true,
+        region: true,
         lastConnectedAt: true,
         createdAt: true,
       },
@@ -63,6 +64,7 @@ router.get('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
         port: true,
         username: true,
         authType: true,
+        region: true,
         lastConnectedAt: true,
         createdAt: true,
         deployments: {
@@ -303,10 +305,20 @@ router.post('/:id/connect', async (req: AuthRequest, res: Response): Promise<voi
       profile.authTag
     );
 
-    // Update last connected timestamp
+    // Update last connected timestamp and region if missing
+    const updateData: any = { lastConnectedAt: new Date() };
+    if (!(profile as any).region) {
+      try {
+        const loc = await sshManager.executeCommand(profile.id, "curl -s http://ip-api.com/line?fields=city,countryCode | tr '\\n' ',' | sed 's/,$//'");
+        if (loc.trim()) updateData.region = loc.trim().toUpperCase();
+      } catch (err) {
+        console.error('[VPS] Get region failed on connect:', err);
+      }
+    }
+
     await prisma.vpsProfile.update({
       where: { id: profile.id },
-      data: { lastConnectedAt: new Date() },
+      data: updateData,
     });
 
     res.json({ message: 'Connected successfully', isConnected: true });
@@ -369,12 +381,13 @@ router.get('/:id/specs', async (req: AuthRequest, res: Response): Promise<void> 
       const cpuCores = parseInt(cpuStr, 10) || 'Unknown';
       const ramStr = await sshManager.executeCommand(profile.id, "free -h | awk '/^Mem:/{print $2}'");
       const diskStr = await sshManager.executeCommand(profile.id, "df -h / | awk 'NR==2 {print $2}'");
-
+      
       res.json({
         os: osVersion.trim(),
         cpu: `${cpuCores} Cores`,
         ram: ramStr.trim(),
-        disk: diskStr.trim()
+        disk: diskStr.trim(),
+        region: (profile as any).region || 'Unknown'
       });
     } catch (cmdErr: any) {
       console.error('[VPS] Specs cmd error:', cmdErr);
