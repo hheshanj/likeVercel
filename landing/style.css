@@ -433,10 +433,10 @@ h3 { font-size: 1.25rem; margin-bottom: 0.75rem; }
 
 /* Deploy Strip */
 .deploy-strip {
-    padding: 2rem 0;
-    margin-top: -5rem;
+    padding: 6rem 0;
     position: relative;
     z-index: 10;
+    background: #ffffff;
 }
 
 .deploy-card {
