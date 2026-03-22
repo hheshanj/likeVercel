@@ -1,4 +1,6 @@
 services:
+
+  # ── Main likeVercel app ───────────────────────────────────────────────────────
   app:
     build:
       context: .
@@ -18,8 +20,40 @@ services:
       JWT_REFRESH_EXPIRES_IN: "${JWT_REFRESH_EXPIRES_IN:-7d}"
       ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
       DATABASE_URL: "file:/app/backend/prisma/data/prod.db"
+      # Analytics API — resolved via Docker's internal network by service name
+      ANALYTICS_API_URL: "http://analytics:4000"
+      ANALYTICS_API_SECRET: "${ANALYTICS_API_SECRET}"
     volumes:
       - likevercel_db:/app/backend/prisma/data
+    depends_on:
+      analytics:
+        condition: service_healthy
+
+  # ── Analytics API ─────────────────────────────────────────────────────────────
+  analytics:
+    build:
+      context: ../analytics-api
+      dockerfile: Dockerfile
+    image: analytics-api
+    container_name: analytics-api
+    restart: unless-stopped
+    # Port exposed to the host for direct access (curl, admin queries, etc.)
+    # Remove or firewall this in production if you only need internal access.
+    ports:
+      - "${ANALYTICS_PORT:-4000}:4000"
+    environment:
+      PORT: 4000
+      API_SECRET: "${ANALYTICS_API_SECRET}"
+      DB_PATH: /app/data/analytics.db
+    volumes:
+      - analytics_db:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   likevercel_db:
+  analytics_db:

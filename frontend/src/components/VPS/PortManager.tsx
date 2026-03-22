@@ -41,8 +41,9 @@ const PortManager: React.FC<PortManagerProps> = ({ vpsId }) => {
       const { data } = await api.get(`/vps/${vpsId}/ports`);
       setActivePorts(data.activePorts);
       setManagedPorts(data.managedPorts);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load ports');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to load ports');
     } finally {
       setLoading(false);
     }
@@ -59,8 +60,9 @@ const PortManager: React.FC<PortManagerProps> = ({ vpsId }) => {
     try {
       const { data } = await api.post(`/vps/${vpsId}/ports/check`, { port: checkPort });
       setCheckResult(data);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Check failed');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Check failed');
     } finally {
       setChecking(false);
     }

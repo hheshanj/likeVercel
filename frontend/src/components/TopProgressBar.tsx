@@ -12,8 +12,10 @@ const TopProgressBar: React.FC = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
 
     // Start animation on route change
-    setVisible(true);
-    setWidth(0);
+    const t0 = setTimeout(() => {
+      setVisible(true);
+      setWidth(0);
+    }, 0);
 
     const t1 = setTimeout(() => setWidth(80), 10);
     const t2 = setTimeout(() => setWidth(100), 300);
@@ -24,6 +26,7 @@ const TopProgressBar: React.FC = () => {
 
     timerRef.current = t3;
     return () => {
+      clearTimeout(t0);
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);

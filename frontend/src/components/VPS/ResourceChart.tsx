@@ -20,13 +20,17 @@ const ResourceChart: React.FC<ResourceChartProps> = ({ vpsId, isConnected, compa
       const { data: d } = await api.get(`/vps/${vpsId}/usage`);
       setLatest({ cpu: d.cpu, ram: d.ram });
       setError('');
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Usage unavailable');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Usage unavailable');
     }
   }, [vpsId]);
 
   useEffect(() => {
-    if (!isConnected) { setLatest(null); return; }
+    if (!isConnected) { 
+      setTimeout(() => setLatest(null), 0); 
+      return; 
+    }
     fetchUsage();
     intervalRef.current = setInterval(fetchUsage, POLL_MS);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };

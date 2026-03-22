@@ -48,8 +48,9 @@ const ProxyManager: React.FC<ProxyManagerProps> = ({ vpsId }) => {
       const { data } = await api.get(`/vps/${vpsId}/proxy`);
       setConfigs(data.configs);
       setNginxInstalled(data.nginxInstalled);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load proxy configs');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to load proxy configs');
     } finally {
       setLoading(false);
     }
@@ -65,8 +66,9 @@ const ProxyManager: React.FC<ProxyManagerProps> = ({ vpsId }) => {
     try {
       await api.post(`/vps/${vpsId}/proxy/install-nginx`);
       setNginxInstalled(true);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to install Nginx');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to install Nginx');
     } finally {
       setInstalling(false);
     }
@@ -89,8 +91,9 @@ const ProxyManager: React.FC<ProxyManagerProps> = ({ vpsId }) => {
       setShowForm(false);
       setForm({ domain: '', port: '', ssl: false });
       fetchConfigs();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create proxy');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to create proxy');
     } finally {
       setCreating(false);
     }
@@ -102,8 +105,9 @@ const ProxyManager: React.FC<ProxyManagerProps> = ({ vpsId }) => {
     try {
       await api.delete(`/vps/${vpsId}/proxy/${domain}`);
       fetchConfigs();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to delete proxy');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to delete proxy');
     } finally {
       setActionLoading(null);
     }
@@ -115,8 +119,9 @@ const ProxyManager: React.FC<ProxyManagerProps> = ({ vpsId }) => {
     try {
       await api.post(`/vps/${vpsId}/proxy/${domain}/ssl`);
       fetchConfigs();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'SSL setup failed');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'SSL setup failed');
     } finally {
       setActionLoading(null);
     }

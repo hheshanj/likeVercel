@@ -29,9 +29,10 @@ const Register: React.FC = () => {
       const { data } = await api.post('/auth/register', { name, email, password });
       login(data.accessToken, data.refreshToken, data.user);
       navigate('/dashboard');
-    } catch (err: any) {
-      const detailedError = err.response?.data?.details?.[0]?.message;
-      setError(detailedError || err.response?.data?.error || 'Failed to register account.');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { details?: Array<{ message: string }>; error?: string } } };
+      const detailedError = error.response?.data?.details?.[0]?.message;
+      setError(detailedError || error.response?.data?.error || 'Failed to register account.');
     } finally {
       setLoading(false);
     }

@@ -57,8 +57,9 @@ const AddVps: React.FC = () => {
       const { data } = await api.post(`/keys/${keyId}/use`);
       setFormData(prev => ({ ...prev, privateKey: data.privateKey }));
       showToast(`Key "${data.label}" loaded`, 'success');
-    } catch (err: any) {
-      showToast(err.response?.data?.error || 'Failed to load key', 'error');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      showToast(error.response?.data?.error || 'Failed to load key', 'error');
     } finally {
       setLoadingKey(false);
     }
@@ -84,8 +85,9 @@ const AddVps: React.FC = () => {
       await api.post('/vps', payload);
       showToast('Server added successfully', 'success');
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to add VPS endpoint');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to add VPS endpoint');
     } finally {
       setLoading(false);
     }

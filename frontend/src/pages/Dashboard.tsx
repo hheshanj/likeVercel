@@ -53,6 +53,7 @@ const Dashboard: React.FC = () => {
       profilesRef.current.filter(p => p.isConnected).forEach(p => fetchSpecs(p.id));
     }, 30_000);
     return () => clearInterval(specInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchProfiles = async () => {
@@ -63,7 +64,7 @@ const Dashboard: React.FC = () => {
       data.profiles.forEach((p: VPSProfile) => {
         if (p.isConnected) fetchSpecs(p.id);
       });
-    } catch (err) {
+    } catch {
       setError('Failed to load infrastructure nodes');
     } finally {
       setLoading(false);
@@ -82,11 +83,11 @@ const Dashboard: React.FC = () => {
           ...prev, 
           [id]: { ...specsData, cpuLoad: usageData.cpu } 
         }));
-      } catch (usageErr) {
+      } catch {
         // Fallback if usage fails but specs worked
         setSpecs(prev => ({ ...prev, [id]: { ...specsData, cpuLoad: 0 } }));
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to fetch node specs', err);
     }
   };
@@ -98,8 +99,9 @@ const Dashboard: React.FC = () => {
       await api.post(`/vps/${id}/connect`);
       showToast('Server connected successfully', 'success');
       fetchProfiles();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Connection failed');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Connection failed');
     } finally {
       setConnecting(null);
     }
@@ -111,8 +113,9 @@ const Dashboard: React.FC = () => {
       await api.post(`/vps/${id}/disconnect`);
       showToast('Server disconnected', 'info');
       fetchProfiles();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Disconnection failed');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Disconnection failed');
     }
   };
 
@@ -127,7 +130,7 @@ const Dashboard: React.FC = () => {
       await api.delete(`/vps/${confirmDelete.id}`);
       showToast(`"${confirmDelete.name}" removed`, 'success');
       fetchProfiles();
-    } catch (err) {
+    } catch {
       setError('Decommission failed');
     } finally {
       setConfirmDelete(null);

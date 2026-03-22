@@ -71,7 +71,7 @@ const VpsDetail: React.FC = () => {
         const { data } = await api.get(`/vps/${id}`);
         setProfile(data.profile);
         if (data.profile.isConnected) fetchSpecs();
-      } catch (err) {
+      } catch {
         navigate('/dashboard');
       } finally {
         setLoading(false);

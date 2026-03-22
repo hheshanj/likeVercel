@@ -56,13 +56,15 @@ const KeyManager: React.FC = () => {
     } finally {
       setLoadingKeys(false);
     }
-  }, []);
+  }, [showToast]);
 
   const fetchVps = useCallback(async () => {
     try {
       const { data } = await api.get('/vps');
       setVps(data.profiles);
-    } catch {}
+    } catch {
+      // ignore
+    }
   }, []);
 
   useEffect(() => {
@@ -88,8 +90,9 @@ const KeyManager: React.FC = () => {
       setAddPrivateKey('');
       setAddPublicKey('');
       fetchKeys();
-    } catch (err: any) {
-      showToast(err.response?.data?.error || 'Failed to save key', 'error');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      showToast(error.response?.data?.error || 'Failed to save key', 'error');
     } finally {
       setSaving(false);
     }
@@ -101,8 +104,9 @@ const KeyManager: React.FC = () => {
       await api.delete(`/keys/${id}`);
       showToast('SSH key deleted', 'success');
       setKeys(prev => prev.filter(k => k.id !== id));
-    } catch (err: any) {
-      showToast(err.response?.data?.error || 'Failed to delete key', 'error');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      showToast(error.response?.data?.error || 'Failed to delete key', 'error');
     } finally {
       setDeleting(null);
     }
@@ -123,8 +127,9 @@ const KeyManager: React.FC = () => {
       showToast('Public key installed on VPS', 'success');
       setInstallKeyId('');
       setInstallVpsId('');
-    } catch (err: any) {
-      showToast(err.response?.data?.error || 'Install failed', 'error');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      showToast(error.response?.data?.error || 'Install failed', 'error');
     } finally {
       setInstalling(false);
     }

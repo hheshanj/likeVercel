@@ -111,8 +111,9 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
       const { data } = await api.get(`/vps/${vpsId}/processes`);
       setDeployments(data.processes);
       setUnmanaged(data.unmanagedProcesses || []);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load processes');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to load processes');
     } finally {
       if (!silent) setLoading(false);
       isFetching.current = false;
@@ -140,8 +141,9 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
       setDeployForm({ projectPath: '', port: '', command: '', processName: '' });
       setShowAdvanced(false);
       fetchProcesses();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Deployment failed');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Deployment failed');
     } finally {
       setDeploying(false);
     }
@@ -157,8 +159,9 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
       await api.post(`/vps/${vpsId}/processes/${deploymentId}/${action}`);
       showToast(`Process ${action}ed`, 'success');
       fetchProcesses();
-    } catch (err: any) {
-      setError(err.response?.data?.error || `Failed to ${action}`);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || `Failed to ${action}`);
     } finally {
       setActionLoading(null);
     }
@@ -171,8 +174,9 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
       await api.delete(`/vps/${vpsId}/processes/${confirmDeleteId}`);
       showToast('Deployment removed', 'success');
       fetchProcesses();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to delete');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to delete');
     } finally {
       setActionLoading(null);
       setConfirmDeleteId(null);
@@ -187,8 +191,9 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
         params: { lines: 200 },
       });
       setLogModal({ id: deploymentId, name: processName, logs: data.logs });
-    } catch (err: any) {
-      setLogModal({ id: deploymentId, name: processName, logs: `Error loading logs: ${err.response?.data?.error || err.message}` });
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } }; message?: string };
+      setLogModal({ id: deploymentId, name: processName, logs: `Error loading logs: ${error.response?.data?.error || error.message}` });
     } finally {
       setLogLoading(false);
     }
@@ -207,8 +212,9 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
       });
       showToast('Process adopted successfully', 'success');
       fetchProcesses();
-    } catch (err: any) {
-      showToast(err.response?.data?.error || 'Adoption failed', 'error');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      showToast(error.response?.data?.error || 'Adoption failed', 'error');
     } finally {
       setActionLoading(null);
     }

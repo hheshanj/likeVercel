@@ -120,8 +120,9 @@ const FileManager: React.FC<FileManagerProps> = ({ vpsId }) => {
       const { data } = await api.get(`/vps/${vpsId}/files`, { params: { path } });
       setFiles(data.files);
       setCurrentPath(data.path);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load files');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to load files');
     } finally {
       setLoading(false);
     }
@@ -161,8 +162,9 @@ const FileManager: React.FC<FileManagerProps> = ({ vpsId }) => {
             }
           },
         });
-      } catch (err: any) {
-        setError(`Upload failed for "${file.name}": ${err.response?.data?.error || err.message}`);
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { error?: string } }; message: string };
+        setError(`Upload failed for "${file.name}": ${error.response?.data?.error || error.message}`);
       }
     }
     setUploadProgress(null);
@@ -192,8 +194,9 @@ const FileManager: React.FC<FileManagerProps> = ({ vpsId }) => {
       setShowNewFolder(false);
       setNewFolderName('');
       fetchFiles(currentPath);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create directory');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to create directory');
     } finally {
       setActionLoading(null);
     }
@@ -210,8 +213,9 @@ const FileManager: React.FC<FileManagerProps> = ({ vpsId }) => {
       await api.delete(`/vps/${vpsId}/files`, { params: { path: confirmDeletePath.path } });
       showToast(`"${confirmDeletePath.name}" deleted`, 'success');
       fetchFiles(currentPath);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Delete failed');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Delete failed');
     } finally {
       setActionLoading(null);
       setConfirmDeletePath(null);
@@ -232,7 +236,7 @@ const FileManager: React.FC<FileManagerProps> = ({ vpsId }) => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-    } catch (err: any) {
+    } catch {
       setError('Download failed');
     }
   };
@@ -247,8 +251,9 @@ const FileManager: React.FC<FileManagerProps> = ({ vpsId }) => {
       setRenamingFile(null);
       setRenameValue('');
       fetchFiles(currentPath);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Rename failed');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Rename failed');
     } finally {
       setActionLoading(null);
     }

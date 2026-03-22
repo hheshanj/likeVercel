@@ -5,6 +5,7 @@ import prisma from '../utils/prisma';
 import { config } from '../config';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { registerSchema, loginSchema } from '../utils/validators';
+import { recordRegistration } from '../services/analyticsService';
 
 const router = Router();
 const SALT_ROUNDS = 12;
@@ -37,7 +38,7 @@ router.post('/register', async (req: AuthRequest, res: Response): Promise<void> 
     // Hash password
     const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
 
-    // Create user
+    // Create user in local DB
     const user = await prisma.user.create({
       data: {
         email: data.email,
@@ -45,6 +46,21 @@ router.post('/register', async (req: AuthRequest, res: Response): Promise<void> 
         name: data.name,
       },
     });
+
+    // Record registration in central analytics DB (strict — roll back on failure)
+    try {
+      await recordRegistration({
+        email: user.email,
+        name: user.name,
+        registeredAt: user.createdAt.toISOString(),
+      });
+    } catch (analyticsError) {
+      // Analytics write failed — delete the just-created user to keep both DBs consistent
+      await prisma.user.delete({ where: { id: user.id } });
+      console.error('[Auth] Analytics recording failed, registration rolled back:', analyticsError);
+      res.status(502).json({ error: 'Registration failed: could not reach analytics service' });
+      return;
+    }
 
     // Generate tokens
     const { accessToken, refreshToken } = generateTokens(user.id);

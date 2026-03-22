@@ -41,7 +41,7 @@ const EditVps: React.FC = () => {
           privateKey: '',
           passphrase: ''
         });
-      } catch (err) {
+      } catch {
         setError('Failed to load VPS credentials for editing');
       } finally {
         setFetching(false);
@@ -61,7 +61,11 @@ const EditVps: React.FC = () => {
     try {
       const { data } = await api.post(`/keys/${keyId}/use`);
       setFormData(prev => ({ ...prev, privateKey: data.privateKey }));
-    } catch {} finally { setLoadingKey(false); }
+    } catch { 
+      /* silent */ 
+    } finally { 
+      setLoadingKey(false); 
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -96,8 +100,9 @@ const EditVps: React.FC = () => {
 
       await api.put(`/vps/${id}`, payload);
       navigate(`/vps/${id}`);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to update VPS endpoint');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to update VPS endpoint');
     } finally {
       setLoading(false);
     }
@@ -108,7 +113,7 @@ const EditVps: React.FC = () => {
     try {
       await api.delete(`/vps/${id}`);
       navigate('/dashboard');
-    } catch (err) {
+    } catch {
       setError('Decommission failed');
     }
   };
