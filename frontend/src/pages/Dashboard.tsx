@@ -5,7 +5,10 @@ import {
   Zap,
   LayoutGrid,
   List,
-  X
+  X,
+  Search,
+  RefreshCw,
+  Power
 } from 'lucide-react';
 import api from '../utils/api';
 import ConfirmModal from '../components/ConfirmModal';
@@ -44,8 +47,18 @@ const Dashboard: React.FC = () => {
   const [connecting, setConnecting] = useState<string | null>(null);
   const [specs, setSpecs] = useState<Record<string, ServerSpecs>>({});
   const [fetchingSpecs, setFetchingSpecs] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    return (localStorage.getItem('dashboardViewMode') as 'grid' | 'list') || 'list';
+  });
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+  
+  // New Filter & Sort State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'offline'>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'status'>('name');
+  const [refreshing, setRefreshing] = useState(false);
+  const [connectingAll, setConnectingAll] = useState(false);
+
   const profilesRef = useRef<VPSProfile[]>([]);
 
   useEffect(() => {
@@ -62,6 +75,10 @@ const Dashboard: React.FC = () => {
     profilesRef.current = profiles;
   }, [profiles]);
 
+  useEffect(() => {
+    localStorage.setItem('dashboardViewMode', viewMode);
+  }, [viewMode]);
+
   const fetchProfiles = async () => {
     try {
       const { data } = await api.get('/vps');
@@ -74,7 +91,13 @@ const Dashboard: React.FC = () => {
       setError('Failed to load infrastructure nodes');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleManualRefresh = () => {
+    setRefreshing(true);
+    fetchProfiles();
   };
 
   const fetchSpecs = async (id: string) => {
@@ -144,6 +167,32 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleConnectAll = async () => {
+    const offlineProfiles = filteredProfiles.filter(p => !p.isConnected);
+    if (offlineProfiles.length === 0) return;
+
+    setConnectingAll(true);
+    
+    // Optimistic UI
+    setProfiles(prev => prev.map(p => 
+      offlineProfiles.some(op => op.id === p.id) ? { ...p, isConnected: true } : p
+    ));
+
+    try {
+      await Promise.allSettled(
+        offlineProfiles.map(p => api.post(`/vps/${p.id}/connect`))
+      );
+      showToast(`Attempted to connect ${offlineProfiles.length} servers`, 'info');
+      await fetchProfiles();
+    } catch (err) {
+      console.error(err);
+      setError('Bulk connection encountered errors');
+      await fetchProfiles(); // Revert optimistic UI on error
+    } finally {
+      setConnectingAll(false);
+    }
+  };
+
   const handleDelete = (id: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setConfirmDelete({ id, name });
@@ -161,6 +210,31 @@ const Dashboard: React.FC = () => {
       setConfirmDelete(null);
     }
   };
+
+  // Derived State: Filter and Sort
+  const filteredProfiles = profiles
+    .filter(p => {
+      // Search
+      const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            p.host.toLowerCase().includes(searchTerm.toLowerCase());
+      // Filter
+      const matchesStatus = statusFilter === 'all' || 
+                            (statusFilter === 'online' && p.isConnected) || 
+                            (statusFilter === 'offline' && !p.isConnected);
+      
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'name') {
+        return a.name.localeCompare(b.name);
+      } else {
+        // Sort by status: Online first, then offline
+        if (a.isConnected === b.isConnected) {
+           return a.name.localeCompare(b.name);
+        }
+        return a.isConnected ? -1 : 1;
+      }
+    });
 
   if (loading) return (
     <div className="p-8 max-w-[1600px] mx-auto space-y-10">
@@ -208,6 +282,8 @@ const Dashboard: React.FC = () => {
           sub="ALL REGIONS" 
           icon={<Server size={20} />} 
           color="blue" 
+          onClick={() => setStatusFilter('all')}
+          active={statusFilter === 'all'}
         />
         <MetricCard 
           label="Online Nodes" 
@@ -215,6 +291,8 @@ const Dashboard: React.FC = () => {
           sub="ACTIVE" 
           icon={<Zap size={20} />} 
           color="emerald" 
+          onClick={() => setStatusFilter('online')}
+          active={statusFilter === 'online'}
         />
         <MetricCard 
           label="Offline Nodes" 
@@ -222,32 +300,88 @@ const Dashboard: React.FC = () => {
           sub="CRITICAL" 
           icon={<X size={20} />} 
           color="red" 
+          onClick={() => setStatusFilter('offline')}
+          active={statusFilter === 'offline'}
         />
       </section>
 
       {/* Active Instances Section */}
       <section className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-black text-slate-900 tracking-tight">Active Instances</h2>
-          <div className="flex bg-slate-100 p-1 rounded-xl">
-            <button 
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            <h2 className="text-lg font-black text-slate-900 tracking-tight">Active Instances</h2>
+            {statusFilter !== 'all' && (
+              <span className="px-2.5 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-widest rounded-lg flex items-center space-x-1">
+                <span>{statusFilter}</span>
+                <button onClick={() => setStatusFilter('all')} className="ml-1 hover:text-red-500"><X size={12} /></button>
+              </span>
+            )}
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative group">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+              <input 
+                type="text" 
+                placeholder="Search nodes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full sm:w-48 bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-900 outline-none focus:border-blue-500/30 transition-all font-bold placeholder:text-slate-400 shadow-sm"
+              />
+            </div>
+
+            <select 
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'name' | 'status')}
+              className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 outline-none focus:border-blue-500/30 shadow-sm appearance-none cursor-pointer"
             >
-              <LayoutGrid size={18} />
-            </button>
+              <option value="name">Sort by Name</option>
+              <option value="status">Sort by Status</option>
+            </select>
+
+            {filteredProfiles.some(p => !p.isConnected) && (
+              <button 
+                onClick={handleConnectAll}
+                disabled={connectingAll}
+                className="flex items-center space-x-1 px-3 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-xl text-xs font-bold transition-all border border-emerald-500/20 disabled:opacity-50"
+              >
+                <Power size={14} />
+                <span className="hidden sm:inline">{connectingAll ? 'Connecting...' : 'Connect All'}</span>
+              </button>
+            )}
+
             <button 
-              onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}
+              onClick={handleManualRefresh}
+              className="p-2 text-slate-500 hover:text-blue-600 bg-white border border-slate-200 rounded-xl shadow-sm transition-all text-xs font-bold"
+              title="Refresh servers"
             >
-              <List size={18} />
+              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
             </button>
+
+            <div className="flex bg-slate-100 p-1 rounded-xl">
+              <button 
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}
+              >
+                <LayoutGrid size={18} />
+              </button>
+              <button 
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}
+              >
+                <List size={18} />
+              </button>
+            </div>
           </div>
         </div>
 
-        {viewMode === 'list' ? (
+        {filteredProfiles.length === 0 ? (
+          <div className="p-12 text-center bg-white border border-slate-200 border-dashed rounded-[32px]">
+             <p className="text-slate-400 font-bold tracking-widest uppercase text-xs">No servers found</p>
+          </div>
+        ) : viewMode === 'list' ? (
           <VpsListView 
-            profiles={profiles}
+            profiles={filteredProfiles}
             specs={specs}
             fetchingSpecs={fetchingSpecs}
             connecting={connecting}
@@ -257,7 +391,7 @@ const Dashboard: React.FC = () => {
           />
         ) : (
           <VpsGridView 
-            profiles={profiles}
+            profiles={filteredProfiles}
             specs={specs}
             fetchingSpecs={fetchingSpecs}
             connecting={connecting}

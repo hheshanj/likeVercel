@@ -1,11 +1,16 @@
 import { Router, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import path from 'path';
+import fs from 'fs';
+import multer from 'multer';
 import prisma from '../utils/prisma';
 import { config } from '../config';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { registerSchema, loginSchema } from '../utils/validators';
 import { recordRegistration } from '../services/analyticsService';
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 200 * 1024 * 1024 } });
 
 const router = Router();
 const SALT_ROUNDS = 12;
@@ -47,6 +52,7 @@ router.post('/register', async (req: AuthRequest, res: Response): Promise<void> 
       },
     });
 
+    /*
     // Record registration in central analytics DB (strict — roll back on failure)
     try {
       await recordRegistration({
@@ -66,6 +72,7 @@ router.post('/register', async (req: AuthRequest, res: Response): Promise<void> 
       res.status(502).json({ error: 'Registration failed: could not reach analytics service' });
       return;
     }
+    */
 
     // Generate tokens
     const { accessToken, refreshToken } = generateTokens(user.id);
@@ -241,6 +248,85 @@ router.delete('/profile', authMiddleware, async (req: AuthRequest, res: Response
     res.json({ message: 'User profile and all associated data deleted' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete profile' });
+  }
+});
+
+// POST /api/auth/restore — upload a backup SQLite file to replace dev.db
+router.post('/restore', authMiddleware, upload.single('backup'), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const file = (req as any).file as Express.Multer.File | undefined;
+    if (!file) {
+      res.status(400).json({ error: 'No backup file uploaded' });
+      return;
+    }
+
+    // Validate SQLite3 magic bytes: "SQLite format 3\0"
+    const SQLITE_MAGIC = Buffer.from([0x53, 0x51, 0x4c, 0x69, 0x74, 0x65, 0x20, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x20, 0x33, 0x00]);
+    if (file.buffer.length < 16 || !file.buffer.slice(0, 16).equals(SQLITE_MAGIC)) {
+      res.status(400).json({ error: 'File does not appear to be a valid SQLite 3 database' });
+      return;
+    }
+
+    const dbPath = path.resolve(__dirname, '../../prisma/dev.db');
+    const backupPath = `${dbPath}.pre-restore-${Date.now()}`;
+
+    // Keep a safety copy of the current db, then replace
+    if (fs.existsSync(dbPath)) fs.copyFileSync(dbPath, backupPath);
+    try {
+      await prisma.$disconnect();
+      fs.writeFileSync(dbPath, file.buffer);
+      // Reconnect by accessing prisma lazily (it reconnects on next query)
+      await prisma.$connect();
+      // Clean up safety backup on success
+      try { if (fs.existsSync(backupPath)) fs.unlinkSync(backupPath); } catch {}
+    } catch (writeErr) {
+      // Try to roll back
+      if (fs.existsSync(backupPath)) {
+        try { fs.copyFileSync(backupPath, dbPath); await prisma.$connect(); } catch {}
+      }
+      throw writeErr;
+    }
+
+    res.json({ message: 'Database restored successfully. Please reload the app.' });
+  } catch (error: any) {
+    console.error('[Auth] Restore error:', error);
+    res.status(500).json({ error: `Restore failed: ${error.message}` });
+  }
+});
+
+// GET /api/auth/backup — stream a copy of the SQLite database
+router.get('/backup', authMiddleware, async (_req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    // Prisma stores the db relative to the schema file (prisma/dev.db)
+    const dbPath = path.resolve(__dirname, '../../prisma/dev.db');
+    if (!fs.existsSync(dbPath)) {
+      res.status(404).json({ error: 'Database file not found' });
+      return;
+    }
+    const filename = `likeVercel-backup-${new Date().toISOString().slice(0, 10)}.sqlite`;
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    fs.createReadStream(dbPath).pipe(res);
+  } catch (error) {
+    console.error('[Auth] Backup error:', error);
+    res.status(500).json({ error: 'Failed to download backup' });
+  }
+});
+
+// GET /api/auth/activity — return recent activity log for the user
+router.get('/activity', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
+    const logs = await prisma.activityLog.findMany({
+      where: { userId: req.userId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: { id: true, action: true, details: true, createdAt: true },
+    });
+    res.json({ logs });
+  } catch (error) {
+    console.error('[Auth] Activity fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch activity log' });
   }
 });
 

@@ -5,6 +5,7 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { encrypt, decrypt } from '../utils/crypto';
 import { sshManager } from '../services/SSHManager';
 import { escapeShellArg } from '../utils/helpers';
+import { logActivity } from '../services/activityService';
 
 const router = Router();
 router.use(authMiddleware);
@@ -28,7 +29,7 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
 
     const keys = await prisma.sshKey.findMany({
       where: { userId: req.userId },
-      select: { id: true, label: true, publicKey: true, fingerprint: true, createdAt: true },
+      select: { id: true, label: true, publicKey: true, fingerprint: true, createdAt: true, lastUsedAt: true },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -100,6 +101,66 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
   } catch (error) {
     console.error('[Keys] Save error:', error);
     res.status(500).json({ error: 'Failed to save SSH key' });
+  }
+});
+
+// POST /api/keys/generate — generate a new Ed25519 key pair and save it
+router.post('/generate', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
+
+    const { label } = req.body as { label: string };
+    if (!label?.trim()) { res.status(400).json({ error: 'label is required' }); return; }
+
+    const { execSync } = await import('child_process');
+    const os = await import('os');
+    const path = await import('path');
+    const fs = await import('fs');
+
+    const tmpDir = os.default.tmpdir();
+    const keyFile = path.default.join(tmpDir, `likeVercel_gen_${Date.now()}`);
+
+    try {
+      // Generate Ed25519 key pair (no passphrase)
+      execSync(`ssh-keygen -t ed25519 -N "" -f "${keyFile}" -C "${label.trim()}"`);
+
+      const privateKey = fs.default.readFileSync(keyFile, 'utf-8');
+      const publicKey = fs.default.readFileSync(`${keyFile}.pub`, 'utf-8').trim();
+
+      const fingerprint = deriveFingerprint(publicKey);
+      const encrypted = encrypt(privateKey.trim());
+
+      const key = await prisma.sshKey.create({
+        data: {
+          userId: req.userId,
+          label: label.trim(),
+          publicKey,
+          fingerprint,
+          encryptedPrivateKey: encrypted.data,
+          iv: encrypted.iv,
+          authTag: encrypted.authTag,
+        },
+      });
+
+      // Return the private key once so the user can save it locally
+      res.status(201).json({
+        key: {
+          id: key.id,
+          label: key.label,
+          publicKey: key.publicKey,
+          fingerprint: key.fingerprint,
+          createdAt: key.createdAt,
+          lastUsedAt: key.lastUsedAt,
+        },
+        privateKey, // only returned on generation — never stored in plaintext after this
+      });
+    } finally {
+      try { fs.default.unlinkSync(keyFile); } catch {}
+      try { fs.default.unlinkSync(`${keyFile}.pub`); } catch {}
+    }
+  } catch (error: any) {
+    console.error('[Keys] Generate error:', error);
+    res.status(500).json({ error: `Key generation failed: ${error.message}` });
   }
 });
 
@@ -182,6 +243,13 @@ router.post('/:id/install', async (req: AuthRequest, res: Response): Promise<voi
     } finally {
       sftp.end();
     }
+
+    // Track last used date and log activity
+    await prisma.sshKey.update({
+      where: { id: key.id },
+      data: { lastUsedAt: new Date() },
+    });
+    if (req.userId) await logActivity(req.userId, 'key_install', `Installed SSH key "${key.label}" on ${profile.name}`);
 
     res.json({ message: 'Public key installed successfully' });
   } catch (error: any) {
