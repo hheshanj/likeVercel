@@ -264,7 +264,7 @@ const FileManager: React.FC<FileManagerProps> = ({ vpsId }) => {
   return (
     <>
     <div
-      className={`flex flex-col h-full space-y-3 relative transition-all ${isDragging ? 'ring-4 ring-blue-500/20 ring-inset rounded-3xl' : ''}`}
+      className={`flex flex-col h-full space-y-4 relative transition-all ${isDragging ? 'ring-4 ring-blue-500/20 ring-inset' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -283,7 +283,7 @@ const FileManager: React.FC<FileManagerProps> = ({ vpsId }) => {
       )}
 
       {/* Navigation and Toolbar */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2 px-4 lg:px-6">
         {/* Modern Breadcrumb */}
         <div className="flex items-center flex-1 min-w-0 bg-[#0a1836]/40 border border-[#6475a1]/10 rounded-2xl p-1 shadow-sm overflow-hidden min-h-[44px]">
           <button
@@ -398,7 +398,7 @@ const FileManager: React.FC<FileManagerProps> = ({ vpsId }) => {
       )}
 
       {/* Main File Table */}
-      <div className="flex-1 bg-[#0a1836]/30 backdrop-blur-md rounded-3xl border border-[#6475a1]/10 overflow-hidden flex flex-col shadow-xl">
+      <div className="flex-1 bg-[#0a1836]/30 backdrop-blur-md border-y border-[#6475a1]/10 overflow-hidden flex flex-col shadow-2xl">
         <div className="overflow-x-auto flex-1 no-scrollbar">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -501,11 +501,11 @@ const FileManager: React.FC<FileManagerProps> = ({ vpsId }) => {
         </div>
         
         {/* Minimalist Footer */}
-        <div className="px-6 py-2.5 bg-[#0a1836] backdrop-blur-sm border-t border-[#6475a1]/10 flex items-center justify-between text-[8px] font-black text-[#6475a1]/60 uppercase tracking-[0.2em]">
+        <div className="px-6 py-3 bg-[#0a1836] backdrop-blur-sm border-t border-[#6475a1]/10 flex items-center justify-between text-[8px] font-black text-[#6475a1]/60 uppercase tracking-[0.2em]">
            <div className="flex items-center space-x-4">
               <span className="text-[#137fec]">{filteredFiles.length} OBJECTS</span>
               <span className="h-1 w-1 bg-[#6475a1]/20 rounded-full" />
-              <span className="font-mono text-[#6475a1]/40 truncate max-w-[150px]">{currentPath}</span>
+              <span className="font-mono text-[#6475a1]/40 truncate max-w-[200px]">{currentPath}</span>
            </div>
            <div className="flex items-center space-x-2">
               <div className="w-1 h-1 rounded-full bg-[#10b981] shadow-[0_0_8px_rgba(16,185,129,0.4)]" />

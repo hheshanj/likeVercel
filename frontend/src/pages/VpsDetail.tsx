@@ -119,73 +119,67 @@ const VpsDetail: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-[#060e20]">
       {/* Detail Header */}
-      <div className="px-8 py-6 border-b border-[#6475a1]/10 bg-[#0a1836]/30">
+      <div className="px-5 py-3 border-b border-[#6475a1]/10 bg-[#0a1836]/30">
         <button 
           onClick={() => navigate('/dashboard')}
-          className="flex items-center space-x-2 text-[#6475a1] hover:text-[#dee5ff] transition-colors mb-5 group text-[10px] font-black uppercase tracking-widest"
+          className="flex items-center space-x-2 text-[#6475a1] hover:text-[#dee5ff] transition-colors mb-2 group text-[9px] font-black uppercase tracking-widest"
         >
-          <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+          <ArrowLeft size={12} className="group-hover:-translate-x-1 transition-transform" />
           <span>Dashboard</span>
         </button>
 
-        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-8 py-2">
-          <div className="flex items-start space-x-6">
+        <div className="flex items-center gap-4 py-1">
+          <div className="flex items-center space-x-4">
             <button 
               onClick={() => navigate(`/vps/${id}/edit`)}
-              className={`relative p-5 rounded-[22px] ${profile.isConnected ? 'bg-[#137fec]/10 border-[#137fec]/20' : 'bg-[#11244c] border-[#6475a1]/10'} border flex items-center justify-center shadow-2xl transition-all active:scale-95 group overflow-hidden mt-1`}
+              className="relative p-2.5 rounded-xl bg-[#137fec]/10 border border-[#137fec]/20 flex items-center justify-center shadow-xl transition-all active:scale-95 group overflow-hidden"
             >
-              <Logo size={32} className={profile.isConnected ? "blue-glow" : ""} />
+              <Logo size={24} className="blue-glow" />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                 <Pencil size={14} className="text-white" />
-              </div>
-              <div className="absolute right-1 bottom-1 p-1 bg-[#137fec] rounded-md text-white shadow-sm opacity-60 group-hover:opacity-100 transition-opacity">
-                 <Pencil size={8} className="stroke-[3px]" />
+                 <Pencil size={12} className="text-white" />
               </div>
             </button>
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <div className="flex items-center space-x-4">
-                  <h1 className="text-3xl font-black text-[#dee5ff] uppercase tracking-tight leading-none">{profile.name}</h1>
-                  {profile.isConnected ? (
-                    <span className="inline-flex items-center px-3.5 py-1.5 rounded-full text-[9px] font-black bg-[#10b981]/10 text-[#10b981] border border-[#10b981]/20 tracking-[0.2em] uppercase">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#10b981] mr-2.5 animate-pulse" />
-                      Live
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center px-3.5 py-1.5 rounded-full text-[9px] font-black bg-[#11244c] text-[#6475a1] border border-[#6475a1]/10 tracking-[0.2em] uppercase">
-                      Offline
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center space-x-4 text-[#6475a1] font-mono text-[11px] font-bold tracking-tight">
-                  <span className="opacity-70">{profile.username}@{profile.host}:{profile.port}</span>
-                  {specs?.region && (
-                    <>
-                      <div className="w-1 h-1 rounded-full bg-[#137fec] opacity-50" />
-                      <span className="text-[#137fec] uppercase tracking-[0.2em] font-black">{specs.region}</span>
-                    </>
-                  )}
-                </div>
+            <div className="space-y-0.5">
+              <div className="flex items-center space-x-3">
+                <h1 className="text-xl font-black text-[#dee5ff] uppercase tracking-tight leading-none">{profile.name}</h1>
+                {profile.isConnected ? (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[8px] font-black bg-[#10b981]/10 text-[#10b981] border border-[#10b981]/10 tracking-widest uppercase">
+                    Live
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[8px] font-black bg-[#11244c] text-[#6475a1] border border-[#6475a1]/10 tracking-widest uppercase">
+                    Offline
+                  </span>
+                )}
               </div>
-              
-              {profile.isConnected && (
-                <div className="w-fit">
-                  <ResourceChart vpsId={profile.id} isConnected={profile.isConnected} compact={true} />
-                </div>
-              )}
+              <div className="flex items-center space-x-3 text-[#6475a1] font-mono text-[9px] font-bold tracking-tight opacity-70">
+                <span>{profile.username}@{profile.host}</span>
+                {specs?.region && (
+                  <>
+                    <div className="w-0.5 h-0.5 rounded-full bg-[#137fec] opacity-40" />
+                    <span className="text-[#137fec] uppercase tracking-widest font-black">{specs.region}</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
+          
+          {profile.isConnected && (
+            <div className="ml-auto scale-90 origin-right">
+              <ResourceChart vpsId={profile.id} isConnected={profile.isConnected} compact={true} />
+            </div>
+          )}
         </div>
       </div>
 
       {/* Main Tab Area */}
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="px-10 border-b border-[#6475a1]/10 bg-[#0a1836]/10 flex space-x-12 overflow-x-auto no-scrollbar">
+        <div className="px-5 border-b border-[#6475a1]/10 bg-[#0a1836]/10 flex space-x-8 overflow-x-auto no-scrollbar">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as Tab)}
-              className={`flex items-center space-x-3 py-6 border-b-2 transition-all font-black text-[10px] uppercase tracking-widest whitespace-nowrap ${
+              className={`flex items-center space-x-2.5 py-4 border-b-2 transition-all font-black text-[9px] uppercase tracking-widest whitespace-nowrap ${
                 activeTab === tab.id 
                 ? 'border-[#137fec] text-[#137fec]' 
                 : 'border-transparent text-[#6475a1] hover:text-[#dee5ff]'
@@ -198,7 +192,7 @@ const VpsDetail: React.FC = () => {
         </div>
 
         <div className="flex-1 min-h-0 relative">
-          <div className="absolute inset-0 px-10 py-10 overflow-y-auto no-scrollbar">
+          <div className={`absolute inset-0 overflow-y-auto no-scrollbar ${(activeTab === 'files' || activeTab === 'terminal') ? 'p-0' : 'p-5 lg:p-8'}`}>
             {/* Map over tabs to keep them alive but hidden when not active */}
             <div className={`h-full ${activeTab !== 'terminal' ? 'hidden' : 'block'}`}>
               {!profile.isConnected ? (

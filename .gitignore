@@ -6,6 +6,7 @@ dist/
 Thumbs.db
 # Platform Components
 frontend/android/
+android/
 backend/.env
 frontend/.env
 
