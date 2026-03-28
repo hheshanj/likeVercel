@@ -26,13 +26,14 @@ const Register: React.FC = () => {
     setError('');
 
     try {
+      console.log('Registering at:', api.defaults.baseURL + '/auth/register');
       const { data } = await api.post('/auth/register', { name, email, password });
       login(data.accessToken, data.refreshToken, data.user);
       navigate('/dashboard');
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { details?: Array<{ message: string }>; error?: string } } };
-      const detailedError = error.response?.data?.details?.[0]?.message;
-      setError(detailedError || error.response?.data?.error || 'Failed to register account.');
+    } catch (err: any) {
+      console.error('Registration Error:', err);
+      const errorMessage = err.response?.data?.error || err.response?.data?.details?.[0]?.message || (err.code === 'ERR_NETWORK' ? 'Network Error: Check your VPN or API URL.' : 'Failed to register account.');
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

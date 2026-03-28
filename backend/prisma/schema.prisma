@@ -9,70 +9,66 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  vpsProfiles VpsProfile[]
-  sshKeys     SshKey[]
+  id          String        @id @default(cuid())
+  email       String        @unique
+  password    String
+  name        String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   activities  ActivityLog[]
+  sshKeys     SshKey[]
+  vpsProfiles VpsProfile[]
 }
 
 model SshKey {
-  id                   String   @id @default(cuid())
-  userId               String
-  label                String
-  publicKey            String
-  fingerprint          String
-  encryptedPrivateKey  String
-  iv                   String
-  authTag              String
-  createdAt            DateTime  @default(now())
-  lastUsedAt           DateTime?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                  String    @id @default(cuid())
+  userId              String
+  label               String
+  publicKey           String
+  fingerprint         String
+  encryptedPrivateKey String
+  iv                  String
+  authTag             String
+  createdAt           DateTime  @default(now())
+  lastUsedAt          DateTime?
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model VpsProfile {
-  id                   String    @id @default(cuid())
+  id                   String       @id @default(cuid())
   userId               String
   name                 String
   host                 String
-  port                 Int       @default(22)
+  port                 Int          @default(22)
   username             String
-  authType             String    @default("password") // "password" or "privateKey"
-  encryptedCredentials String // AES-256-GCM encrypted JSON
-  iv                   String // Initialization vector
-  authTag              String // GCM auth tag
+  authType             String       @default("password")
+  encryptedCredentials String
+  iv                   String
+  authTag              String
   region               String?
   lastConnectedAt      DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deployments Deployment[]
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  deployments          Deployment[]
+  user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model Deployment {
-  id          String    @id @default(cuid())
+  id          String     @id @default(cuid())
   vpsId       String
   projectPath String
   processName String
   port        Int?
-  status      String    @default("stopped") // "running", "stopped", "errored"
+  status      String     @default("stopped")
   startedAt   DateTime?
   stoppedAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  vps VpsProfile @relation(fields: [vpsId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  vps         VpsProfile @relation(fields: [vpsId], references: [id], onDelete: Cascade)
 
   @@index([vpsId])
 }
@@ -83,6 +79,5 @@ model ActivityLog {
   action    String
   details   String
   createdAt DateTime @default(now())
-
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

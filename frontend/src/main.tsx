@@ -5,7 +5,7 @@ import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import './index.css';
 
-console.error('LikeVercel: INITIALIZING NATIVE APPLICATION...');
+console.log('LikeVercel: Initializing Native Application...');
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <HashRouter>
