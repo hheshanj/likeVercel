@@ -1,5 +1,3 @@
----
-
 # ⚡ likeVercel
 
 A self-hosted VPS management dashboard. Connect to your servers over SSH and manage everything from a single browser interface.
