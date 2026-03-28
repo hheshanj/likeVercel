@@ -27,15 +27,13 @@ const httpServer = createServer(app);
 // CORS allowed origins — includes Capacitor Android/iOS WebView origins
 const corsOrigins = [
   config.frontendUrl,
+  'http://localhost:5173', // Local development
   'capacitor://localhost',
   'https://localhost',
   'http://localhost',
 ];
 
-// Add local machine IP if needed for emulator testing
-if (config.nodeEnv === 'development') {
-  corsOrigins.push('http://localhost:5173');
-}
+// Added localhost:5173 to corsOrigins above for all envs.
 
 // Socket.io
 const io = new SocketIOServer(httpServer, {
@@ -65,7 +63,7 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
       imgSrc: ["'self'", 'data:', 'blob:'],
-      connectSrc: ["'self'", 'ws:', 'wss:', 'http://localhost:*', 'https:'],
+      connectSrc: ["'self'", 'ws:', 'wss:', 'http://localhost:*', 'http://47.130.218.172:*', 'https:'],
       workerSrc: ["'self'", 'blob:'],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: null,
