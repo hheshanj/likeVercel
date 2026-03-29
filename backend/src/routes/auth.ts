@@ -7,6 +7,7 @@ import multer from 'multer';
 import prisma from '../utils/prisma';
 import { config } from '../config';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { adminMiddleware } from '../middleware/admin';
 import { registerSchema, loginSchema } from '../utils/validators';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 200 * 1024 * 1024 } });
@@ -27,12 +28,8 @@ router.post('/register', async (req: AuthRequest, res: Response): Promise<void> 
   try {
     const data = registerSchema.parse(req.body);
 
-    // Enforce single-user policy: block registration if a user already exists
     const userCount = await prisma.user.count();
-    if (userCount > 0) {
-      res.status(403).json({ error: 'Registration is closed. Only one administrator is allowed.' });
-      return;
-    }
+    const role = userCount === 0 ? 'ADMIN' : 'USER';
     const existingUser = await prisma.user.findUnique({ where: { email: data.email } });
     if (existingUser) {
       res.status(400).json({ error: 'User with this email already exists' });
@@ -48,6 +45,7 @@ router.post('/register', async (req: AuthRequest, res: Response): Promise<void> 
         email: data.email,
         password: hashedPassword,
         name: data.name,
+        role: role,
       },
     });
 
@@ -56,7 +54,7 @@ router.post('/register', async (req: AuthRequest, res: Response): Promise<void> 
     const { accessToken, refreshToken } = generateTokens(user.id);
 
     res.status(201).json({
-      user: { id: user.id, email: user.email, name: user.name },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role },
       accessToken,
       refreshToken,
     });
@@ -90,7 +88,7 @@ router.post('/login', async (req: AuthRequest, res: Response): Promise<void> => 
     const { accessToken, refreshToken } = generateTokens(user.id);
 
     res.json({
-      user: { id: user.id, email: user.email, name: user.name },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role },
       accessToken,
       refreshToken,
     });
@@ -139,7 +137,7 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response): Promi
 
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
-      select: { id: true, email: true, name: true, createdAt: true },
+      select: { id: true, email: true, name: true, role: true, createdAt: true },
     });
 
     if (!user) {
@@ -165,7 +163,7 @@ router.put('/profile', authMiddleware, async (req: AuthRequest, res: Response): 
     const user = await prisma.user.update({
       where: { id: req.userId },
       data: { name },
-      select: { id: true, email: true, name: true }
+      select: { id: true, email: true, name: true, role: true }
     });
 
     res.json({ user });
@@ -230,7 +228,7 @@ router.delete('/profile', authMiddleware, async (req: AuthRequest, res: Response
 });
 
 // POST /api/auth/restore — upload a backup SQLite file to replace dev.db
-router.post('/restore', authMiddleware, upload.single('backup'), async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/restore', authMiddleware, adminMiddleware, upload.single('backup'), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const file = (req as any).file as Express.Multer.File | undefined;
     if (!file) {
@@ -273,7 +271,7 @@ router.post('/restore', authMiddleware, upload.single('backup'), async (req: Aut
 });
 
 // GET /api/auth/backup — stream a copy of the SQLite database
-router.get('/backup', authMiddleware, async (_req: AuthRequest, res: Response): Promise<void> => {
+router.get('/backup', authMiddleware, adminMiddleware, async (_req: AuthRequest, res: Response): Promise<void> => {
   try {
     // Prisma stores the db relative to the schema file (prisma/dev.db)
     const dbPath = path.resolve(__dirname, '../../prisma/dev.db');
