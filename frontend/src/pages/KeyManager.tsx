@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   KeyRound, Plus, Trash2, Copy, Check, Server, Loader2,
   ShieldCheck, AlertTriangle, ChevronDown, X, Eye, EyeOff,
@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import api from '../utils/api';
 import { useToast } from '../context/ToastContext';
+import { useKeys } from '../context/KeyContext';
+import { useVps } from '../context/VpsContext';
 
 interface SshKey {
   id: string;
@@ -16,12 +18,7 @@ interface SshKey {
   lastUsedAt: string | null;
 }
 
-interface VpsOption {
-  id: string;
-  name: string;
-  host: string;
-  isConnected: boolean;
-}
+
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -60,8 +57,8 @@ const KeyManager: React.FC = () => {
   const { showToast } = useToast();
 
   /* ── Saved keys ── */
-  const [keys, setKeys] = useState<SshKey[]>([]);
-  const [loadingKeys, setLoadingKeys] = useState(true);
+  const { keys, refreshKeys, loading: loadingKeys, setKeys } = useKeys();
+  const { profiles: vps } = useVps();
 
   /* ── Add key form ── */
   const [showAddForm, setShowAddForm] = useState(false);
@@ -76,7 +73,6 @@ const KeyManager: React.FC = () => {
   const [copiedGenKey, setCopiedGenKey] = useState(false);
 
   /* ── Install to VPS ── */
-  const [vps, setVps] = useState<VpsOption[]>([]);
   const [installKeyId, setInstallKeyId] = useState('');
   const [installVpsIds, setInstallVpsIds] = useState<string[]>([]);
   const [installing, setInstalling] = useState(false);
@@ -85,29 +81,9 @@ const KeyManager: React.FC = () => {
   const [copied, setCopied] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  const fetchKeys = useCallback(async () => {
-    setLoadingKeys(true);
-    try {
-      const { data } = await api.get('/keys');
-      setKeys(data.keys);
-    } catch {
-      showToast('Failed to load SSH keys', 'error');
-    } finally {
-      setLoadingKeys(false);
-    }
-  }, [showToast]);
-
-  const fetchVps = useCallback(async () => {
-    try {
-      const { data } = await api.get('/vps');
-      setVps(data.profiles);
-    } catch { /* ignore */ }
-  }, []);
-
   useEffect(() => {
-    fetchKeys();
-    fetchVps();
-  }, [fetchKeys, fetchVps]);
+    refreshKeys();
+  }, [refreshKeys]);
 
   // Reset form when toggled
   const handleToggleForm = () => {
@@ -136,7 +112,7 @@ const KeyManager: React.FC = () => {
       setAddLabel('');
       setAddPrivateKey('');
       setAddPublicKey('');
-      fetchKeys();
+      refreshKeys();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
       showToast(error.response?.data?.error || 'Failed to save key', 'error');

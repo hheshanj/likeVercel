@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import Logo from '../Logo';
 import { useAuth } from '../../context/AuthContext';
+import { useVps } from '../../context/VpsContext';
+import { useKeys } from '../../context/KeyContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -17,11 +19,23 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
+  const { offlineCount } = useVps();
+  const { totalKeys } = useKeys();
   const navigate = useNavigate();
 
   const navItems = [
-    { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/dashboard' },
-    { icon: <Key size={20} />, label: 'SSH Keys', path: '/keys' },
+    { 
+      icon: <LayoutDashboard size={20} />, 
+      label: 'Dashboard', 
+      path: '/dashboard',
+      badge: offlineCount > 0 ? { count: offlineCount, color: 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]' } : null 
+    },
+    { 
+      icon: <Key size={20} />, 
+      label: 'SSH Keys', 
+      path: '/keys',
+      badge: totalKeys > 0 ? { count: totalKeys, color: 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.4)]' } : null
+    },
     { icon: <Settings size={20} />, label: 'Settings', path: '/settings' },
   ];
 
@@ -67,15 +81,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             key={item.path}
             to={item.path}
             className={({ isActive }) => 
-              `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all text-sm font-bold ${
+              `flex items-center justify-between px-4 py-3 rounded-xl transition-all text-sm font-bold ${
                 isActive 
                 ? 'bg-blue-500/10 text-blue-500 shadow-sm border border-blue-500/20 shadow-blue-500/5' 
                 : 'text-text-secondary hover:bg-bg-tertiary hover:text-text-primary'
               }`
             }
           >
-            {item.icon}
-            <span>{item.label}</span>
+            <div className="flex items-center space-x-3">
+              {item.icon}
+              <span>{item.label}</span>
+            </div>
+            {item.badge && (
+              <span className={`px-2 py-0.5 rounded-full text-[10px] text-white font-black animate-in zoom-in-50 duration-300 ${item.badge.color}`}>
+                {item.badge.count}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>

@@ -12,6 +12,8 @@ import Layout from './components/Layout/Layout';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
+import { VpsProvider } from './context/VpsContext';
+import { KeyProvider } from './context/KeyContext';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -71,60 +73,64 @@ const App: React.FC = () => {
     <ThemeProvider>
       <ToastProvider>
         <AuthProvider>
-      <Routes>
-        <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
-        <Route path="/register" element={<AuthRoute><Register /></AuthRoute>} />
-        <Route 
-          path="/dashboard" 
-          element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          } 
-        />
-        <Route 
-          path="/vps/add" 
-          element={
-            <PrivateRoute>
-              <AddVps />
-            </PrivateRoute>
-          } 
-        />
-        <Route 
-          path="/vps/:id" 
-          element={
-            <PrivateRoute>
-              <VpsDetail />
-            </PrivateRoute>
-          } 
-        />
-        <Route 
-          path="/vps/:id/edit" 
-          element={
-            <PrivateRoute>
-              <EditVps />
-            </PrivateRoute>
-          } 
-        />
-        <Route 
-          path="/settings" 
-          element={
-            <PrivateRoute>
-              <Settings />
-            </PrivateRoute>
-          } 
-        />
-        <Route 
-          path="/keys" 
-          element={
-            <PrivateRoute>
-              <KeyManager />
-            </PrivateRoute>
-          } 
-        />
-        <Route path="/" element={<Navigate to="/dashboard" />} />
-      </Routes>
-      </AuthProvider>
+          <VpsProvider>
+            <KeyProvider>
+              <Routes>
+                <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
+                <Route path="/register" element={<AuthRoute><Register /></AuthRoute>} />
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <PrivateRoute>
+                      <Dashboard />
+                    </PrivateRoute>
+                  } 
+                />
+                <Route 
+                  path="/vps/add" 
+                  element={
+                    <PrivateRoute>
+                      <AddVps />
+                    </PrivateRoute>
+                  } 
+                />
+                <Route 
+                  path="/vps/:id" 
+                  element={
+                    <PrivateRoute>
+                      <VpsDetail />
+                    </PrivateRoute>
+                  } 
+                />
+                <Route 
+                  path="/vps/:id/edit" 
+                  element={
+                    <PrivateRoute>
+                      <EditVps />
+                    </PrivateRoute>
+                  } 
+                />
+                <Route 
+                  path="/settings" 
+                  element={
+                    <PrivateRoute>
+                      <Settings />
+                    </PrivateRoute>
+                  } 
+                />
+                <Route 
+                  path="/keys" 
+                  element={
+                    <PrivateRoute>
+                      <KeyManager />
+                    </PrivateRoute>
+                  } 
+                />
+                <Route path="/" element={<Navigate to="/dashboard" />} />
+              </Routes>
+            </KeyProvider>
+          </VpsProvider>
+        </AuthProvider>
       </ToastProvider>
     </ThemeProvider>
   );
