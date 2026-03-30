@@ -44,7 +44,21 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com", "ws:", "wss:"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
 app.use(cors({
   origin: config.frontendUrl,
   credentials: true,
@@ -79,7 +93,7 @@ app.use('/api/vps', proxyRoutes);
 app.use('/api/keys', keyRoutes);
 
 // Health check with DB ping (Fix 18)
-app.get('/api/health', async (_req, res) => {
+app.get('/api/health', async (_req: Request, res: Response) => {
   let dbStatus = 'ok';
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -97,17 +111,31 @@ app.get('/api/health', async (_req, res) => {
 
 // Serve static files in production
 if (config.nodeEnv === 'production') {
-  const distPath = path.resolve(__dirname, '../../frontend/dist');
-  if (fs.existsSync(distPath)) {
+  // Check common locations for frontend/dist
+  const possiblePaths = [
+    path.resolve(__dirname, '../../frontend/dist'), // Local dev structure
+    path.resolve(__dirname, '../frontend/dist'),    // Docker structure (/app/dist/index.js -> /app/frontend/dist)
+    path.resolve(process.cwd(), 'frontend/dist')    // Process root
+  ];
+
+  let distPath = '';
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      distPath = p;
+      break;
+    }
+  }
+
+  if (distPath) {
     app.use(express.static(distPath));
     // Index path for SPA routing
-    app.get('*', (req, res, next) => {
+    app.get('*', (req: Request, res: Response, next: NextFunction) => {
       if (req.path.startsWith('/api')) return next();
       res.sendFile(path.join(distPath, 'index.html'));
     });
     console.log(`[Server] Production mode: Serving frontend from ${distPath}`);
   } else {
-    console.warn(`[Server] Production mode: frontend/dist not found at ${distPath}`);
+    console.error(`[Server] ERROR: Production mode enabled but frontend/dist not found in searched paths: ${possiblePaths.join(', ')}`);
   }
 }
 
