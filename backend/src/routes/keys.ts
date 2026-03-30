@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { createHash } from 'crypto';
+import { createHash, generateKeyPairSync } from 'crypto';
 import { execSync } from 'child_process';
 import os from 'os';
 import path from 'path';

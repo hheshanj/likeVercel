@@ -8,6 +8,7 @@ RUN npm run build
 
 # Stage 2: Build Backend
 FROM node:20-slim AS backend-builder
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app/backend
 COPY backend/package*.json ./
 RUN npm install

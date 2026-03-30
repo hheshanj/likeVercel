@@ -8,6 +8,7 @@ import prisma from '../utils/prisma';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { encrypt } from '../utils/crypto';
 import { sshManager } from '../services/SSHManager';
+import { generateKeyPairSync } from 'crypto';
 import { createVpsSchema, updateVpsSchema } from '../utils/validators';
 import { escapeShellArg } from '../utils/helpers';
 
@@ -485,7 +486,6 @@ router.post('/keys/generate', async (req: AuthRequest, res: Response): Promise<v
   try {
     if (!req.userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
 
-    const { generateKeyPairSync } = await import('crypto');
     const { privateKey, publicKey } = generateKeyPairSync('ed25519', {
       privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
       publicKeyEncoding: { type: 'spki', format: 'pem' },

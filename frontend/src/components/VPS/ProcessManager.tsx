@@ -105,6 +105,7 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmAdoptProc, setConfirmAdoptProc] = useState<UnmanagedProcess | null>(null);
 
   const isFetching = useRef(false);
 
@@ -206,8 +207,14 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
     }
   };
 
-  const handleAdopt = async (proc: UnmanagedProcess) => {
-    const actionKey = proc.pm_id ? `adopt-${proc.pm_id}` : `adopt-${proc.port}`;
+  const handleAdopt = (proc: UnmanagedProcess) => {
+    setConfirmAdoptProc(proc);
+  };
+
+  const confirmAdopt = async () => {
+    if (!confirmAdoptProc) return;
+    const proc = confirmAdoptProc;
+    const actionKey = proc.pm_id !== undefined ? `adopt-${proc.pm_id}` : `adopt-${proc.port}`;
     setActionLoading(actionKey);
     try {
       await api.post(`/vps/${vpsId}/processes/adopt`, {
@@ -218,6 +225,7 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
         type: proc.type,
       });
       showToast('Process adopted successfully', 'success');
+      setConfirmAdoptProc(null);
       fetchProcesses();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
@@ -498,10 +506,10 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
 
                       <button 
                        onClick={() => handleAdopt(proc)}
-                       disabled={actionLoading === (proc.pm_id ? `adopt-${proc.pm_id}` : `adopt-${proc.port}`)}
+                       disabled={actionLoading === (proc.pm_id !== undefined ? `adopt-${proc.pm_id}` : `adopt-${proc.port}`)}
                        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] rounded-xl transition-all border border-blue-600 shadow-xl shadow-blue-600/10 uppercase tracking-widest disabled:opacity-50 flex items-center space-x-2"
                       >
-                        {actionLoading === (proc.pm_id ? `adopt-${proc.pm_id}` : `adopt-${proc.port}`) ? <Loader2 size={14} className="animate-spin" /> : <span>Take Control</span>}
+                        {actionLoading === (proc.pm_id !== undefined ? `adopt-${proc.pm_id}` : `adopt-${proc.port}`) ? <Loader2 size={14} className="animate-spin" /> : <span>Take Control</span>}
                       </button>
                     </div>
                   </div>
@@ -566,7 +574,7 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
           </div>
         </div>
       )}
-      {/* Confirm Delete Deployment Modal */}
+      {/* Confirm Action Modals */}
       {confirmDeleteId && (
         <ConfirmModal
           title="Delete Deployment"
@@ -575,6 +583,19 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
           danger
           onConfirm={confirmDeleteDeployment}
           onCancel={() => setConfirmDeleteId(null)}
+        />
+      )}
+      {confirmAdoptProc && (
+        <ConfirmModal
+          title="Take Control"
+          message={
+            confirmAdoptProc.type === 'port' 
+              ? `Adopting this raw port process requires RESTARTING it under PM2 management. A brief outage will occur. Are you sure you want to take control of ${confirmAdoptProc.processName}?`
+              : `Bring this existing PM2 process (${confirmAdoptProc.processName}) under LikeVercel management?`
+          }
+          confirmLabel="Take Control"
+          onConfirm={confirmAdopt}
+          onCancel={() => setConfirmAdoptProc(null)}
         />
       )}
     </div>
