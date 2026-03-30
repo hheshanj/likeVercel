@@ -74,7 +74,7 @@ router.post('/:id/ports/check', async (req: AuthRequest, res: Response): Promise
     try {
       const output = await sshManager.executeCommand(
         vpsId,
-        `ss -tlnp | grep ":${portNum} " | wc -l`
+        `ss -tlnp 'sport = :${portNum}' | grep -c LISTEN || echo 0`
       );
       const isUsed = parseInt(output.trim()) > 0;
 

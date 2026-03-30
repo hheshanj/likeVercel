@@ -163,7 +163,7 @@ const gracefulShutdown = async (signal: string) => {
   });
 
   // Disconnect all SSH sessions
-  sshManager.disconnectAll();
+  await sshManager.disconnectAll();
   console.log('[SSH] All sessions disconnected');
 
   // Disconnect Prisma

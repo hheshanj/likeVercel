@@ -39,6 +39,6 @@ ENV PORT=3001
 
 EXPOSE 3001
 
-# Auto-run Prisma migrations on startup if dev.db doesn't exist
+# Apply versioned migrations on startup
 # Then start the server
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]

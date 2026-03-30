@@ -1,5 +1,9 @@
 import { Router, Response } from 'express';
 import { createHash } from 'crypto';
+import { execSync } from 'child_process';
+import os from 'os';
+import path from 'path';
+import fs from 'fs';
 import prisma from '../utils/prisma';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { encrypt, decrypt } from '../utils/crypto';
@@ -54,20 +58,14 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
     if (!label?.trim()) { res.status(400).json({ error: 'label is required' }); return; }
     if (!privateKey?.trim()) { res.status(400).json({ error: 'privateKey is required' }); return; }
 
-    // Derive public key from private key using ssh-keygen if not provided
     let resolvedPublicKey = publicKey?.trim() || '';
     if (!resolvedPublicKey) {
       try {
-        const { execSync } = await import('child_process');
-        const os = await import('os');
-        const path = await import('path');
-        const fs = await import('fs');
-
-        const tmpDir = os.default.tmpdir();
-        const keyFile = path.default.join(tmpDir, `likeVercel_tmp_${Date.now()}`);
-        fs.default.writeFileSync(keyFile, privateKey.trim() + '\n', { mode: 0o600 });
+        const tmpDir = os.tmpdir();
+        const keyFile = path.join(tmpDir, `likeVercel_tmp_${Date.now()}`);
+        fs.writeFileSync(keyFile, privateKey.trim() + '\n', { mode: 0o600 });
         resolvedPublicKey = execSync(`ssh-keygen -y -f "${keyFile}"`, { encoding: 'utf-8' }).trim();
-        try { fs.default.unlinkSync(keyFile); } catch {}
+        try { fs.unlinkSync(keyFile); } catch {}
       } catch {
         res.status(400).json({ error: 'Could not derive public key — paste it manually or ensure the key is valid.' });
         return;
@@ -112,20 +110,14 @@ router.post('/generate', async (req: AuthRequest, res: Response): Promise<void> 
     const { label } = req.body as { label: string };
     if (!label?.trim()) { res.status(400).json({ error: 'label is required' }); return; }
 
-    const { execSync } = await import('child_process');
-    const os = await import('os');
-    const path = await import('path');
-    const fs = await import('fs');
-
-    const tmpDir = os.default.tmpdir();
-    const keyFile = path.default.join(tmpDir, `likeVercel_gen_${Date.now()}`);
+    const tmpDir = os.tmpdir();
+    const keyFile = path.join(tmpDir, `likeVercel_gen_${Date.now()}`);
 
     try {
-      // Generate Ed25519 key pair (no passphrase)
       execSync(`ssh-keygen -t ed25519 -N "" -f "${keyFile}" -C "${label.trim()}"`);
 
-      const privateKey = fs.default.readFileSync(keyFile, 'utf-8');
-      const publicKey = fs.default.readFileSync(`${keyFile}.pub`, 'utf-8').trim();
+      const privateKey = fs.readFileSync(keyFile, 'utf-8');
+      const publicKey = fs.readFileSync(`${keyFile}.pub`, 'utf-8').trim();
 
       const fingerprint = deriveFingerprint(publicKey);
       const encrypted = encrypt(privateKey.trim());
@@ -142,7 +134,6 @@ router.post('/generate', async (req: AuthRequest, res: Response): Promise<void> 
         },
       });
 
-      // Return the private key once so the user can save it locally
       res.status(201).json({
         key: {
           id: key.id,
@@ -152,11 +143,11 @@ router.post('/generate', async (req: AuthRequest, res: Response): Promise<void> 
           createdAt: key.createdAt,
           lastUsedAt: key.lastUsedAt,
         },
-        privateKey, // only returned on generation — never stored in plaintext after this
+        privateKey,
       });
     } finally {
-      try { fs.default.unlinkSync(keyFile); } catch {}
-      try { fs.default.unlinkSync(`${keyFile}.pub`); } catch {}
+      try { fs.unlinkSync(keyFile); } catch {}
+      try { fs.unlinkSync(`${keyFile}.pub`); } catch {}
     }
   } catch (error: any) {
     console.error('[Keys] Generate error:', error);
@@ -224,9 +215,13 @@ router.post('/:id/install', async (req: AuthRequest, res: Response): Promise<voi
     
     try {
       // Ensure .ssh exists
-      await new Promise((resolve, reject) => {
+      await new Promise<void>((resolve, reject) => {
         sftp.mkdir('.ssh', { mode: 0o700 }, (err) => {
-          resolve(true);
+          if (err && !err.message.toLowerCase().includes('failure')) {
+            reject(new Error(`Failed to create .ssh directory: ${err.message}`));
+          } else {
+            resolve();
+          }
         });
       });
 

@@ -1,4 +1,9 @@
 import { Router, Response } from 'express';
+import { execSync } from 'child_process';
+import os from 'os';
+import path from 'path';
+import fs from 'fs';
+import { Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { encrypt } from '../utils/crypto';
@@ -185,7 +190,7 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
     }
 
     // If credentials changed, re-encrypt
-    const updateData: any = {};
+    const updateData: Prisma.VpsProfileUpdateInput = {};
     if (data.name) updateData.name = data.name;
     if (data.host) updateData.host = data.host;
     if (data.port) updateData.port = data.port;
@@ -316,26 +321,19 @@ router.post('/:id/connect', async (req: AuthRequest, res: Response): Promise<voi
     );
 
     // Update last connected timestamp and region if missing
-    const updateData: any = { lastConnectedAt: new Date() };
+    const updateData: Prisma.VpsProfileUpdateInput = { lastConnectedAt: new Date() };
     if (!profile.region) {
       try {
-        // Use HTTPS (ipapi.co) to prevent unencrypted IP leaks; timeout 5s to avoid hanging
-        const city = await sshManager.executeCommand(profile.id, "curl -s --max-time 5 https://ipapi.co/city/");
-        const country = await sshManager.executeCommand(profile.id, "curl -s --max-time 5 https://ipapi.co/country/");
-        
-        const cityTrim = city.trim();
-        const countryTrim = country.trim();
-
-        // Check if the response looks like an error message or rate limit JSON
-        const isError = (str: string) => str.startsWith('{') || str.includes('RATELIMITED') || str.includes('ERROR');
-
-        if (cityTrim && countryTrim && !isError(cityTrim) && !isError(countryTrim)) {
-          updateData.region = `${cityTrim},${countryTrim}`.toUpperCase();
-        } else {
-          console.warn('[VPS] Region detection skipped: rate limited or invalid response');
+        const geoRaw = await sshManager.executeCommand(
+          profile.id,
+          'curl -s --max-time 5 https://ipapi.co/json/'
+        );
+        const geo = JSON.parse(geoRaw);
+        if (geo.city && geo.country && !geo.error) {
+          updateData.region = `${geo.city},${geo.country}`.toUpperCase();
         }
       } catch (err) {
-        console.error('[VPS] Get region failed on connect:', err);
+        console.warn('[VPS] Region detection failed:', err);
       }
     }
 
@@ -493,12 +491,6 @@ router.post('/keys/generate', async (req: AuthRequest, res: Response): Promise<v
       publicKeyEncoding: { type: 'spki', format: 'pem' },
     });
 
-    // Build OpenSSH public key line from spki PEM
-    const { execSync } = await import('child_process');
-    const os = await import('os');
-    const path = await import('path');
-    const fs = await import('fs');
-
     const tmpDir = os.tmpdir();
     const keyFile = path.join(tmpDir, `likeVercel_${Date.now()}`);
 
@@ -509,7 +501,6 @@ router.post('/keys/generate', async (req: AuthRequest, res: Response): Promise<v
       sshPublicKey = execSync(`ssh-keygen -y -f "${keyFile}"`, { encoding: 'utf-8' }).trim();
       sshPublicKey += ` likeVercel-generated`;
     } catch {
-      // fallback: return raw spki PEM if ssh-keygen not available
       sshPublicKey = publicKey;
     } finally {
       try { fs.unlinkSync(keyFile); } catch {}
@@ -544,10 +535,13 @@ router.post('/:id/keys/install', async (req: AuthRequest, res: Response): Promis
     
     try {
       // Ensure .ssh exists
-      await new Promise((resolve, reject) => {
+      await new Promise<void>((resolve, reject) => {
         sftp.mkdir('.ssh', { mode: 0o700 }, (err) => {
-          // Ignore error if directory already exists
-          resolve(true);
+          if (err && !err.message.toLowerCase().includes('failure')) {
+            reject(new Error(`Failed to create .ssh directory: ${err.message}`));
+          } else {
+            resolve();
+          }
         });
       });
 

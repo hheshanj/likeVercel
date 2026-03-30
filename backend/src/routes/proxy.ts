@@ -198,12 +198,21 @@ router.post('/:id/proxy', async (req: AuthRequest, res: Response): Promise<void>
     const fileName = `vdp-${domain.replace(/\./g, '-')}`;
     const config = generateNginxConfig(domain, port, false); // Always start without SSL
 
-    // Write config using base64 to avoid shell escaping issues with $variables
-    const configBase64 = Buffer.from(config).toString('base64');
-    await sshManager.executeCommand(
-      vpsId,
-      `echo '${configBase64}' | base64 -d | sudo tee /etc/nginx/sites-available/${escapeShellArg(fileName)} > /dev/null`
-    );
+    // Write config via SFTP to avoid shell escaping concerns
+    const sftp = await sshManager.getSftp(vpsId);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const stream = sftp.createWriteStream(
+          `/etc/nginx/sites-available/${fileName}`,
+          { flags: 'w', mode: 0o644 }
+        );
+        stream.on('error', reject);
+        stream.on('close', () => resolve());
+        stream.end(config);
+      });
+    } finally {
+      sftp.end();
+    }
 
     // Enable it (symlink to sites-enabled)
     await sshManager.executeCommand(

@@ -250,10 +250,12 @@ export class SSHManager extends EventEmitter {
     this.connections.delete(vpsId);
   }
 
-  disconnectAll(): void {
+  async disconnectAll(): Promise<void> {
+    const promises: Promise<void>[] = [];
     for (const [vpsId] of this.connections) {
-      this.disconnect(vpsId);
+      promises.push(this.disconnect(vpsId));
     }
+    await Promise.all(promises);
   }
 }
 

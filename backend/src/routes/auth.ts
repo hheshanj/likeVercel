@@ -267,7 +267,10 @@ router.post('/restore', authMiddleware, upload.single('backup'), async (req: Aut
       throw writeErr;
     }
 
-    res.json({ message: 'Database restored successfully. Please reload the app.' });
+    res.json({
+      message: 'Database replaced successfully. Restart the server for changes to take effect.',
+      requiresRestart: true,
+    });
   } catch (error: any) {
     console.error('[Auth] Restore error:', error);
     res.status(500).json({ error: `Restore failed: ${error.message}` });
