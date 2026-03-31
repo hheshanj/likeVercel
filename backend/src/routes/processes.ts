@@ -46,84 +46,39 @@ router.get('/:id/processes', async (req: AuthRequest, res: Response): Promise<vo
       type: 'pm2'
     }));
 
-    // Scan for all listening TCP ports
-    const listeningPorts = new Set<number>();
-    const unmanagedPorts: any[] = [];
-    
+    // Scan for systemctl running services
+    const systemctlProcesses: any[] = [];
     try {
-      let ssOutput = '';
-      try {
-        ssOutput = await sshManager.executeCommand(vpsId, "ss -lntp | grep 'LISTEN'");
-      } catch {
-        ssOutput = await sshManager.executeCommand(vpsId, "lsof -iTCP -sTCP:LISTEN -P -n | grep 'LISTEN'");
-      }
-
-      const lines = ssOutput.split('\n').filter(l => l.trim());
-      const managedPorts = new Set(deployments.map(d => d.port));
-      const pm2Ports = new Set();
-      pm2Processes.forEach(p => {
-        if (p.pm2_env?.PORT) pm2Ports.add(parseInt(p.pm2_env.PORT));
-      });
-
-      for (const line of lines) {
-        let port: number | null = null;
-        let name = 'raw-process';
-        let pid: string | null = null;
-
-        if (line.includes('users:')) {
-          const portMatch = line.match(/:(\d+)\s+/);
-          if (portMatch) port = parseInt(portMatch[1]);
-          const userMatch = line.match(/users:\(\("([^"]+)",pid=(\d+)/);
-          if (userMatch) { name = userMatch[1]; pid = userMatch[2]; }
-        } else {
-          const parts = line.split(/\s+/).filter(Boolean);
-          const addrPart = parts.find(p => p.includes(':') || p.includes('*'));
-          if (addrPart) {
-            const portStr = addrPart.split(':').pop() || addrPart.split('*').pop();
-            if (portStr) port = parseInt(portStr);
-          }
-          
-          // Try to find PID in ss output (format: users:(("node",pid=1234,fd=18)))
-          const pidMatch = line.match(/pid=(\d+)/);
-          if (pidMatch) pid = pidMatch[1];
-        }
-        
-        if (port && !isNaN(port)) {
-          listeningPorts.add(port);
-          
-          if (!managedPorts.has(port) && !pm2Ports.has(port)) {
-            if (![22, 25, 53, 111, 2049].includes(port)) {
-              unmanagedPorts.push({
-                processName: `${name}:${port}`,
-                cpu: 0,
-                memory: 0,
-                status: 'running',
-                port: port,
-                pid: pid,
-                type: 'port'
-              });
-            }
-          }
+      const sysOutput = await sshManager.executeCommand(vpsId, "systemctl list-units --type=service --state=running --no-pager --no-legend");
+      const sysLines = sysOutput.split('\n').filter(l => l.trim());
+      for (const line of sysLines) {
+        const parts = line.split(/\s+/).filter(Boolean);
+        if (parts.length > 0) {
+          const serviceName = parts[0].replace('.service', '');
+          systemctlProcesses.push({
+            processName: serviceName,
+            cpu: 0,
+            memory: 0,
+            status: 'running',
+            type: 'systemctl'
+          });
         }
       }
     } catch (err) {
-      console.warn('[Process] Robust port scan failed:', err);
+      console.warn('[Process] Systemctl scan failed:', err);
     }
 
-    const allUnmanaged = [...unmanagedPm2Processes, ...unmanagedPorts];
+    const allUnmanaged = [...unmanagedPm2Processes, ...systemctlProcesses];
 
     const processesWithStatus = deployments.map((d: any) => {
       const pm2Process = pm2Processes.find((p: any) => p.name === d.processName);
       
       // Status determination:
       // 1. If in PM2, use PM2 status
-      // 2. If not in PM2 but port is listening, it is "online" (raw process)
-      // 3. Otherwise, it is "stopped"
+      // 2. Otherwise, it is "stopped"
       let status = 'stopped';
       if (pm2Process) {
         status = pm2Process.pm2_env.status;
-      } else if (d.port && listeningPorts.has(d.port)) {
-        status = 'online';
       }
 
       return {

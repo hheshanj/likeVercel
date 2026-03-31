@@ -50,7 +50,7 @@ interface UnmanagedProcess {
   pm_id?: number;
   port?: number;
   pid?: number;
-  type?: 'pm2' | 'port';
+  type?: 'pm2' | 'port' | 'systemctl';
 }
 
 interface ProcessManagerProps {
@@ -228,7 +228,7 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
   const confirmAdopt = async () => {
     if (!confirmAdoptProc) return;
     const proc = confirmAdoptProc;
-    const actionKey = proc.pm_id !== undefined ? `adopt-${proc.pm_id}` : `adopt-${proc.port}`;
+    const actionKey = proc.pm_id !== undefined ? `adopt-${proc.pm_id}` : `adopt-${proc.processName}`;
     setActionLoading(actionKey);
     try {
       await api.post(`/vps/${vpsId}/processes/adopt`, {
@@ -562,31 +562,31 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
                   <div key={proc.pm_id || `port-${proc.port}`} className="group premium-card glass-effect rounded-[22px] sm:rounded-[24px] border border-border-light bg-amber-500/[0.02] hover:border-amber-500/30 transition-all duration-300 overflow-hidden shadow-xl">
                     <div className="p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-5">
                       <div className="flex items-center space-x-4">
-                        <div className={`p-4 rounded-2xl ${proc.type === 'port' ? 'icon-grad-amber shadow-[0_0_20px_rgba(245,158,11,0.2)]' : 'icon-grad-indigo shadow-[0_0_20px_rgba(79,70,229,0.2)]'} transition-all shadow-inner`}>
+                        <div className={`p-4 rounded-2xl ${proc.type === 'systemctl' ? 'icon-grad-amber shadow-[0_0_20px_rgba(245,158,11,0.2)]' : proc.type === 'port' ? 'icon-grad-amber shadow-[0_0_20px_rgba(245,158,11,0.2)]' : 'icon-grad-indigo shadow-[0_0_20px_rgba(79,70,229,0.2)]'} transition-all shadow-inner`}>
                           <Activity size={24} className="text-white" />
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center space-x-3 mb-1.5">
                             <h5 className="font-bold text-text-primary tracking-tight text-[13px]">{proc.processName}</h5>
                             <div className="px-2.5 py-0.5 rounded-full border bg-amber-500/10 border-amber-500/20 text-amber-500 text-[9px] font-bold uppercase tracking-widest">
-                               {proc.type === 'port' ? 'RAW PORT' : 'UNMANAGED'}
+                               {proc.type === 'systemctl' ? 'SYSTEM SERVICE' : proc.type === 'port' ? 'RAW PORT' : 'UNMANAGED'}
                             </div>
                           </div>
                           <p className="text-[10px] font-medium text-text-muted tracking-wide flex items-center space-x-2">
                              <span className={`h-1.5 w-1.5 rounded-full ${proc.status === 'online' || proc.status === 'running' ? 'bg-emerald-500' : 'bg-red-500'}`} />
                              <span>Status: {proc.status}</span>
                              <span className="opacity-30">|</span>
-                             <span>{proc.pm_id ? `PM2 ID: ${proc.pm_id}` : `PORT: ${proc.port}`}</span>
+                             <span>{proc.pm_id ? `PM2 ID: ${proc.pm_id}` : proc.type === 'systemctl' ? 'SYSTEMD' : `PORT: ${proc.port}`}</span>
                           </p>
                         </div>
                       </div>
 
                       <button 
                        onClick={() => handleAdopt(proc)}
-                       disabled={actionLoading === (proc.pm_id !== undefined ? `adopt-${proc.pm_id}` : `adopt-${proc.port}`)}
+                       disabled={actionLoading === (proc.pm_id !== undefined ? `adopt-${proc.pm_id}` : `adopt-${proc.processName}`)}
                        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] rounded-xl transition-all border border-blue-600 shadow-xl shadow-blue-600/10 uppercase tracking-widest disabled:opacity-50 flex items-center space-x-2"
                       >
-                        {actionLoading === (proc.pm_id !== undefined ? `adopt-${proc.pm_id}` : `adopt-${proc.port}`) ? <Loader2 size={14} className="animate-spin" /> : <span>Take Control</span>}
+                        {actionLoading === (proc.pm_id !== undefined ? `adopt-${proc.pm_id}` : `adopt-${proc.processName}`) ? <Loader2 size={14} className="animate-spin" /> : <span>Take Control</span>}
                       </button>
                     </div>
                   </div>
@@ -769,9 +769,11 @@ const ProcessManager: React.FC<ProcessManagerProps> = ({ vpsId }) => {
         <ConfirmModal
           title="Take Control"
           message={
-            confirmAdoptProc.type === 'port' 
-              ? `Adopting this raw port process requires RESTARTING it under PM2 management. A brief outage will occur. Are you sure you want to take control of ${confirmAdoptProc.processName}?`
-              : `Bring this existing PM2 process (${confirmAdoptProc.processName}) under LikeVercel management?`
+            confirmAdoptProc?.type === 'systemctl'
+              ? `Adopting a systemctl service (${confirmAdoptProc?.processName}) is currently not natively supported. Would you like to stop the service and restart it under PM2 manually?`
+              : confirmAdoptProc?.type === 'port' 
+              ? `Adopting this raw port process requires RESTARTING it under PM2 management. A brief outage will occur. Are you sure you want to take control of ${confirmAdoptProc?.processName}?`
+              : `Bring this existing PM2 process (${confirmAdoptProc?.processName}) under LikeVercel management?`
           }
           confirmLabel="Take Control"
           onConfirm={confirmAdopt}
