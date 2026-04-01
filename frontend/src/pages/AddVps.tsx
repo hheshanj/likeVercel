@@ -1,18 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Loader2, Save, Terminal, Shield, KeyRound, ChevronDown } from 'lucide-react';
 import api from '../utils/api';
 import { useToast } from '../context/ToastContext';
-
-interface SavedKey {
-  id: string;
-  label: string;
-  fingerprint: string;
-}
+import { useVps } from '../context/VpsContext';
+import { useKeys } from '../context/KeyContext';
 
 const AddVps: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { refreshProfiles } = useVps();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -28,15 +25,9 @@ const AddVps: React.FC = () => {
   });
 
   /* Saved keys */
-  const [savedKeys, setSavedKeys] = useState<SavedKey[]>([]);
+  const { keys: savedKeys } = useKeys();
   const [selectedKeyId, setSelectedKeyId] = useState('');
   const [loadingKey, setLoadingKey] = useState(false);
-
-  useEffect(() => {
-    api.get('/keys')
-      .then(({ data }) => setSavedKeys(data.keys))
-      .catch(() => {});
-  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -83,6 +74,7 @@ const AddVps: React.FC = () => {
       };
 
       await api.post('/vps', payload);
+      await refreshProfiles();
       showToast('Server added successfully', 'success');
       navigate('/dashboard');
     } catch (err: unknown) {
@@ -237,7 +229,7 @@ const AddVps: React.FC = () => {
                         className="w-full appearance-none bg-bg-primary border border-border-light focus:border-blue-500 rounded-xl px-4 py-3 text-text-primary outline-none transition-all font-bold text-sm cursor-pointer"
                       >
                         <option value="">— select a saved key or paste below —</option>
-                        {savedKeys.map(k => (
+                        {savedKeys.map((k: any) => (
                           <option key={k.id} value={k.id}>{k.label} (MD5:{k.fingerprint})</option>
                         ))}
                       </select>
